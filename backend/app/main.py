@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import users, auth, roles, especialistas, servicios, clientes, citas, productos, inventario, sedes, dashboard
 from .routers import cajas, facturas, facturas_pendientes, ventas, comisiones, abonos, reportes, nomina
 from .database import engine, Base
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 # Importar modelos para que estén registrados en Base.metadata
 from .models import user, auth as auth_models, especialista, servicio, cliente, cita, sede
@@ -51,6 +52,9 @@ app = FastAPI(
         "displayRequestDuration": True,  # Mostrar duración de requests
     }
 )
+
+# Handle HTTPS behind proxy
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Configuración de CORS
 origins = [
@@ -104,5 +108,3 @@ app.include_router(nomina.router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Club Alisados API"}
-
-
