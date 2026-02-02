@@ -20,6 +20,8 @@ import type {
     FacturaPendienteResumen,
     VentasDia,
     VentasPorMetodoPago,
+    ResumenComisiones,
+    ComisionEspecialista,
 } from '@/types/caja';
 
 // ========== CAJAS ==========
@@ -287,20 +289,7 @@ export const comisionesApi = {
     },
 
     // Resumen general de comisiones
-    async resumenComisiones(fechaDesde?: string, fechaHasta?: string): Promise<{
-        fecha_desde: string;
-        fecha_hasta: string;
-        total_general: number;
-        cantidad_especialistas: number;
-        detalle_por_especialista: Array<{
-            especialista_id: number;
-            especialista_nombre: string;
-            total_servicios: number;
-            total_productos: number;
-            total_comision: number;
-            cantidad_items: number;
-        }>;
-    }> {
+    async resumenComisiones(fechaDesde?: string, fechaHasta?: string): Promise<ResumenComisiones> {
         const { data } = await apiClient.get('/comisiones/resumen', {
             params: { fecha_desde: fechaDesde, fecha_hasta: fechaHasta },
         });

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatPrecio } from '@/types/caja';
-import type { VentasDia, VentasPorMetodoPago } from '@/types/caja';
+import type { VentasDia, VentasPorMetodoPago, ResumenComisiones } from '@/types/caja';
 import { ventasApi, comisionesApi } from '@/lib/api/caja';
 import {
     BarChart3,
@@ -32,18 +32,7 @@ export default function ReportesPage() {
 
     const [ventasPeriodo, setVentasPeriodo] = useState<VentasDia[]>([]);
     const [ventasMetodo, setVentasMetodo] = useState<VentasPorMetodoPago[]>([]);
-    const [comisiones, setComisiones] = useState<{
-        total_general: number;
-        cantidad_especialistas: number;
-        detalle_por_especialista: Array<{
-            especialista_id: number;
-            especialista_nombre: string;
-            total_servicios: number;
-            total_productos: number;
-            total_comision: number;
-            cantidad_items: number;
-        }>;
-    } | null>(null);
+    const [comisiones, setComisiones] = useState<ResumenComisiones | null>(null);
 
     useEffect(() => {
         const cargarDatos = async () => {

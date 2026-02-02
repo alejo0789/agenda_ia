@@ -248,6 +248,24 @@ export interface VentasPorMetodoPago {
     cantidad: number;
 }
 
+// ========== COMISIONES ==========
+export interface ComisionEspecialista {
+    especialista_id: number;
+    especialista_nombre: string;
+    total_servicios: number;
+    total_productos: number;
+    total_comision: number;
+    cantidad_items: number;
+}
+
+export interface ResumenComisiones {
+    fecha_desde: string;
+    fecha_hasta: string;
+    total_general: number;
+    cantidad_especialistas: number;
+    detalle_por_especialista: ComisionEspecialista[];
+}
+
 // ========== ITEM CARRITO (para POS) ==========
 export interface ItemCarrito {
     id: string; // ID único en carrito (uuid)
