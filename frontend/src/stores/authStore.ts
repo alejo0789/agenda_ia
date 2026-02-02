@@ -1,27 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-interface User {
-    id: number;
-    username: string;
-    email: string;
-    nombre: string;
-    rol: {
-        id: number;
-        nombre: string;
-        descripcion: string;
-    };
-    sede_id: number | null;
-    especialista_id: number | null;
-    estado: string;
-}
+import { Usuario } from '@/types/usuario';
 
 interface AuthState {
-    user: User | null;
+    user: Usuario | null;
     token: string | null;
     refreshToken: string | null;
     isAuthenticated: boolean;
-    setAuth: (user: User, token: string, refreshToken: string) => void;
+    setAuth: (user: Usuario, token: string, refreshToken: string) => void;
     clearAuth: () => void;
 }
 

@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { Usuario } from '@/types/usuario';
 
 export interface LoginCredentials {
     username: string;
@@ -11,29 +12,11 @@ export interface TokenResponse {
     token_type: string;
 }
 
-export interface UserResponse {
-    id: number;
-    username: string;
-    email: string;
-    nombre: string;
-    rol_id: number;
-    rol: {
-        id: number;
-        nombre: string;
-        descripcion: string;
-    };
-    especialista_id: number | null;
-    estado: string;
-    primer_acceso: boolean;
-    fecha_creacion: string;
-    ultimo_acceso: string | null;
-}
-
 export interface LoginResponse {
     access_token: string;
     refresh_token: string;
     token_type: string;
-    user: UserResponse;
+    user: Usuario;
 }
 
 export const authApi = {
@@ -54,7 +37,7 @@ export const authApi = {
         localStorage.setItem('access_token', token);
 
         // Paso 3: Obtener la información del usuario
-        const userResponse = await apiClient.get<UserResponse>('/usuarios/me');
+        const userResponse = await apiClient.get<Usuario>('/usuarios/me');
 
         // Paso 4: Retornar todo junto
         return {
