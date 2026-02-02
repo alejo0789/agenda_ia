@@ -30,6 +30,7 @@ export interface Cliente {
     id: number;
     nombre: string;
     apellido: string | null;
+    cedula: string | null;
     nombre_completo?: string;
     telefono: string | null;
     email: string | null;
@@ -61,6 +62,7 @@ export interface ClienteListItem {
     id: number;
     nombre: string;
     apellido: string | null;
+    cedula: string | null;
     telefono: string | null;
     email: string | null;
     total_visitas: number;
@@ -75,6 +77,7 @@ export interface ClienteListItem {
 export interface ClienteCreateDTO {
     nombre: string;
     apellido?: string;
+    cedula?: string;
     telefono?: string;
     email?: string;
     fecha_nacimiento?: string;
@@ -88,6 +91,7 @@ export interface ClienteCreateDTO {
 export interface ClienteUpdateDTO {
     nombre?: string;
     apellido?: string;
+    cedula?: string;
     telefono?: string;
     email?: string;
     fecha_nacimiento?: string;
@@ -128,6 +132,7 @@ export interface ClienteFilters {
 export interface ClienteFormData {
     nombre: string;
     apellido: string;
+    cedula: string;
     telefono: string;
     email: string;
     fecha_nacimiento: string;

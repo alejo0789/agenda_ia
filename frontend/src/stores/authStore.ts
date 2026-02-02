@@ -11,6 +11,7 @@ interface User {
         nombre: string;
         descripcion: string;
     };
+    sede_id: number | null;
     especialista_id: number | null;
     estado: string;
 }

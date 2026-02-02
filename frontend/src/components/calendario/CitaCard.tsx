@@ -5,19 +5,21 @@ import { Clock, User } from 'lucide-react';
 
 interface Cliente {
     nombre: string;
-    telefono: string;
+    telefono: string | null;
 }
 
 interface Cita {
     id: number;
+    cliente_id: number;
     cliente: Cliente;
     especialista_id: number;
+    servicio_id: number;
     servicio: string;
     hora_inicio: string;
     hora_fin: string;
     duracion: number;
     estado: string;
-    notas: string;
+    notas: string | null;
 }
 
 interface CitaCardProps {
@@ -39,10 +41,10 @@ const estadoConfig: Record<string, { color: string; bgColor: string; label: stri
         label: 'Confirmada',
         icon: '●'
     },
-    en_proceso: {
+    cliente_llego: {
         color: 'text-orange-700 dark:text-orange-300',
         bgColor: 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700',
-        label: 'En proceso',
+        label: 'Cliente llegó',
         icon: '●'
     },
     completada: {

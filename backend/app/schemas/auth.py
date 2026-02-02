@@ -46,3 +46,11 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+
+class CheckFirstAccessRequest(BaseModel):
+    username: str
+
+class SetupPasswordRequest(BaseModel):
+    username: str
+    new_password: str
+

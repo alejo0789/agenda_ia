@@ -6,6 +6,7 @@ from ..database import get_db
 from ..models import Usuario, Rol, Permiso, RolPermiso
 from ..schemas import auth as schemas
 from ..services.auth_service import AuthService
+from ..services.password_service import PasswordService
 from ..dependencies import get_current_user, oauth2_scheme
 
 router = APIRouter(
@@ -120,3 +121,45 @@ def reset_password(
 ):
     # TODO: Implement password reset with token validation
     return {"message": "Password reset functionality will be implemented"}
+
+@router.post("/check-first-access")
+def check_first_access(
+    data: schemas.CheckFirstAccessRequest,
+    db: Session = Depends(get_db)
+):
+    from sqlalchemy import func
+    user = db.query(Usuario).filter(func.lower(Usuario.username) == func.lower(data.username)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    return {
+        "is_first_access": user.primer_acceso,
+        "user_id": user.id
+    }
+
+@router.post("/setup-password")
+def setup_password(
+    data: schemas.SetupPasswordRequest,
+    db: Session = Depends(get_db)
+    # request: Request, # Podríamos auto-logear, pero por seguridad mejor que haga login normal
+):
+    from sqlalchemy import func
+    user = db.query(Usuario).filter(func.lower(Usuario.username) == func.lower(data.username)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    if not user.primer_acceso:
+        raise HTTPException(status_code=400, detail="El usuario ya ha configurado su contraseña")
+        
+    # Validate password strength (RN-AUTH-005)
+    is_valid, error_message = PasswordService.validate_password_strength(data.new_password)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_message)
+        
+    user.password_hash = PasswordService.hash_password(data.new_password)
+    user.primer_acceso = False
+    user.estado = "activo" # Asegurar que esté activo
+    
+    db.commit()
+    return {"message": "Contraseña configurada exitosamente. Ahora puede iniciar sesión."}
+

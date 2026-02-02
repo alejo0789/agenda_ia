@@ -28,7 +28,7 @@ INSERT INTO usuarios (
     rol_id,
     estado
 ) VALUES (
-    'admin',
+    'admin2',
     'admin@clubalisados.com',
     '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIr.oUdNHu',  -- Password: Admin123!@#
     'Administrador del Sistema',

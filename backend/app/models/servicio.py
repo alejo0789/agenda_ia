@@ -9,6 +9,7 @@ class CategoriaServicio(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(100), nullable=False, unique=True)
+    sede_id = Column(Integer, ForeignKey("sedes.id"), index=True)
     descripcion = Column(String)
     orden_visualizacion = Column(Integer, default=0)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
@@ -22,6 +23,7 @@ class Servicio(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(100), nullable=False)
+    sede_id = Column(Integer, ForeignKey("sedes.id"), index=True)
     descripcion = Column(String)
     duracion_minutos = Column(Integer, nullable=False)
     precio_base = Column(DECIMAL(12, 2), nullable=False)

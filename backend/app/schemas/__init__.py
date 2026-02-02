@@ -19,6 +19,31 @@ from .cliente import (
     ClienteEtiquetaBase, ClienteEtiquetaCreate, ClienteEtiquetaUpdate, ClienteEtiquetaResponse,
     EtiquetaSimple, AsignarEtiquetasRequest
 )
+from .producto import (
+    # Proveedores
+    ProveedorBase, ProveedorCreate, ProveedorUpdate, ProveedorResponse, ProveedorListResponse,
+    # Productos
+    ProductoBase, ProductoCreate, ProductoUpdate, ProductoResponse, ProductoListResponse, ProductoPaginado,
+    InventarioUbicacion, ProductoAlertaStockBajo, ProductoAlertaVencimiento,
+    # Ubicaciones
+    UbicacionBase, UbicacionCreate, UbicacionUpdate, UbicacionResponse,
+    # Inventario
+    InventarioResponse, AjusteInventarioRequest, TransferenciaRequest,
+    ConteoFisicoRequest, ConteoFisicoResponse, ConteoFisicoItem, ConteoFisicoResultado,
+    # Movimientos
+    MovimientoBase, MovimientoCreate, MovimientoResponse, MovimientoPaginado, CompraRequest,
+    # Operaciones masivas
+    ActualizarPreciosMasivoRequest, ActualizarPreciosResponse, ActualizarPreciosResultado,
+    # Reportes
+    VentaProductoReporte, ProductoPorEspecialistaReporte, ResumenInventarioUbicacion, ResumenInventarioResponse,
+    # Enums
+    EstadoProducto, EstadoProveedor, TipoUbicacion, TipoMovimiento
+)
+from .abono import (
+    AbonoCreate, AbonoResponse, AbonoListItem, AbonoClienteResumen,
+    RedencionAbonoCreate, RedencionAbonoResponse,
+    AbonoParaFactura, AbonosClienteFactura, AplicarAbonoFactura, AbonoAnular
+)
 
 __all__ = [
     "UserBase", "UserCreate", "UserUpdate", "UserResponse", 
@@ -36,5 +61,21 @@ __all__ = [
     "ClienteBase", "ClienteCreate", "ClienteUpdate", "ClienteResponse", "ClienteListResponse", "ClientePaginado",
     "ClientePreferenciaBase", "ClientePreferenciaCreate", "ClientePreferenciaUpdate", "ClientePreferenciaResponse",
     "ClienteEtiquetaBase", "ClienteEtiquetaCreate", "ClienteEtiquetaUpdate", "ClienteEtiquetaResponse",
-    "EtiquetaSimple", "AsignarEtiquetasRequest"
+    "EtiquetaSimple", "AsignarEtiquetasRequest",
+    # Productos e Inventario
+    "ProveedorBase", "ProveedorCreate", "ProveedorUpdate", "ProveedorResponse", "ProveedorListResponse",
+    "ProductoBase", "ProductoCreate", "ProductoUpdate", "ProductoResponse", "ProductoListResponse", "ProductoPaginado",
+    "InventarioUbicacion", "ProductoAlertaStockBajo", "ProductoAlertaVencimiento",
+    "UbicacionBase", "UbicacionCreate", "UbicacionUpdate", "UbicacionResponse",
+    "InventarioResponse", "AjusteInventarioRequest", "TransferenciaRequest",
+    "ConteoFisicoRequest", "ConteoFisicoResponse", "ConteoFisicoItem", "ConteoFisicoResultado",
+    "MovimientoBase", "MovimientoCreate", "MovimientoResponse", "MovimientoPaginado", "CompraRequest",
+    "ActualizarPreciosMasivoRequest", "ActualizarPreciosResponse", "ActualizarPreciosResultado",
+    "VentaProductoReporte", "ProductoPorEspecialistaReporte", "ResumenInventarioUbicacion", "ResumenInventarioResponse",
+    "EstadoProducto", "EstadoProveedor", "TipoUbicacion", "TipoMovimiento",
+    # Abonos
+    "AbonoCreate", "AbonoResponse", "AbonoListItem", "AbonoClienteResumen",
+    "RedencionAbonoCreate", "RedencionAbonoResponse",
+    "AbonoParaFactura", "AbonosClienteFactura", "AplicarAbonoFactura", "AbonoAnular"
 ]
+

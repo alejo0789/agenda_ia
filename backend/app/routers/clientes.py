@@ -39,7 +39,7 @@ def listar_clientes(
     ordenar_por: str = Query('nombre', description="Campo para ordenar"),
     orden: str = Query('asc', regex='^(asc|desc)$'),
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("clientes.ver"))
+    user: dict = Depends(require_permission("clientes.ver"))
 ):
     """
     BE-CLI-001: Listar clientes con filtros y paginación
@@ -53,6 +53,7 @@ def listar_clientes(
     """
     return ClienteService.get_all_paginado(
         db=db,
+        sede_id=user["user"].sede_id,
         query=query,
         estado=estado,
         etiqueta_id=etiqueta_id,
@@ -68,13 +69,13 @@ def listar_clientes(
 @router.get("/activos", response_model=List[ClienteListResponse])
 def listar_clientes_activos(
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("agenda.ver"))
+    user: dict = Depends(require_permission("agenda.ver"))
 ):
     """
     BE-CLI-007: Listar clientes activos (para selectores)
     Permiso: agenda.ver
     """
-    clientes = ClienteService.get_activos(db)
+    clientes = ClienteService.get_activos(db, user["user"].sede_id)
     result = []
     for cliente in clientes:
         etiquetas = ClienteService._get_etiquetas_cliente(db, cliente.id)
@@ -82,6 +83,7 @@ def listar_clientes_activos(
             "id": cliente.id,
             "nombre": cliente.nombre,
             "apellido": cliente.apellido,
+            "cedula": cliente.cedula,
             "telefono": cliente.telefono,
             "email": cliente.email,
             "total_visitas": cliente.total_visitas or 0,
@@ -97,17 +99,17 @@ def busqueda_rapida(
     q: str = Query(..., min_length=2, description="Término de búsqueda"),
     limite: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("clientes.ver"))
+    user: dict = Depends(require_permission("clientes.buscar"))
 ):
     """
     BE-CLI-006: Búsqueda rápida de clientes
-    Permiso: clientes.ver
+    Permiso: clientes.buscar
     
     Búsqueda rápida para autocompletado.
-    Busca en nombre, apellido y teléfono.
+    Busca en nombre, apellido, teléfono y cédula.
     Retorna máximo 10 resultados por defecto.
     """
-    clientes = ClienteService.busqueda_rapida(db, q, limite)
+    clientes = ClienteService.busqueda_rapida(db, user["user"].sede_id, q, limite)
     result = []
     for cliente in clientes:
         etiquetas = ClienteService._get_etiquetas_cliente(db, cliente.id)
@@ -115,6 +117,7 @@ def busqueda_rapida(
             "id": cliente.id,
             "nombre": cliente.nombre,
             "apellido": cliente.apellido,
+            "cedula": cliente.cedula,
             "telefono": cliente.telefono,
             "email": cliente.email,
             "total_visitas": cliente.total_visitas or 0,
@@ -153,7 +156,7 @@ def obtener_cliente(
 def crear_cliente(
     cliente_data: ClienteCreate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("clientes.crear"))
+    user: dict = Depends(require_permission("clientes.crear"))
 ):
     """
     BE-CLI-003: Crear nuevo cliente
@@ -169,7 +172,7 @@ def crear_cliente(
     - Establece estado 'activo'
     - Crea registro de preferencias vacío
     """
-    cliente = ClienteService.create(db, cliente_data)
+    cliente = ClienteService.create(db, cliente_data, user["user"].sede_id)
     return ClienteService.get_by_id_completo(db, cliente.id)
 
 
@@ -267,9 +270,8 @@ def actualizar_preferencias(
 # ENDPOINTS DE ETIQUETAS
 # ============================================
 
-@etiquetas_router.get("", response_model=List[ClienteEtiquetaResponse])
+@etiquetas_router.get("")
 def listar_etiquetas(
-    incluir_totales: bool = Query(True, description="Incluir conteo de clientes"),
     db: Session = Depends(get_db),
     _: dict = Depends(require_permission("clientes.ver"))
 ):
@@ -277,10 +279,15 @@ def listar_etiquetas(
     BE-ETIQ-001: Listar todas las etiquetas
     Permiso: clientes.ver
     
-    Retorna todas las etiquetas con opción de incluir
-    el total de clientes asociados a cada una.
+    Retorna todas las etiquetas con el total de clientes asociados.
     """
-    return ClienteService.get_all_etiquetas(db, incluir_totales)
+    try:
+        result = ClienteService.get_all_etiquetas(db, True)
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @etiquetas_router.post("", response_model=ClienteEtiquetaResponse, status_code=status.HTTP_201_CREATED)

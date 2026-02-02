@@ -26,9 +26,13 @@ export default function DashboardLayout({
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Sidebar />
-            <div className="lg:pl-64">
-                <Header />
+            <div className="print:hidden">
+                <Sidebar />
+            </div>
+            <div className="lg:pl-64 print:pl-0">
+                <div className="print:hidden">
+                    <Header />
+                </div>
                 <main className="py-6 px-4 sm:px-6 lg:px-8">
                     {children}
                 </main>

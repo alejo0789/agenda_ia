@@ -23,6 +23,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { serviciosApi } from '@/lib/api/servicios';
+import { clientesApi } from '@/lib/api/clientes';
+import { citasApi, CitaCreate } from '@/lib/api/citas';
+import { metodosPagoApi } from '@/lib/api/caja';
+import { MetodoPago } from '@/types/caja';
+import { ClienteListItem, ClienteCreateDTO } from '@/types/cliente';
 import { Servicio, formatDuracion, formatPrecio } from '@/types/servicio';
 import { toast } from 'sonner';
 
@@ -34,21 +39,32 @@ interface Especialista {
     color: string;
 }
 
-interface Cliente {
+interface ClienteEncontrado {
+    id: number;
     nombre: string;
-    telefono: string;
+    apellido?: string | null;
+    cedula?: string | null;
+    telefono?: string | null;
+    email?: string | null;
+}
+
+interface CitaCliente {
+    nombre: string;
+    telefono: string | null;
 }
 
 interface Cita {
     id: number;
-    cliente: Cliente;
+    cliente_id: number;
+    cliente: CitaCliente;
     especialista_id: number;
+    servicio_id: number;
     servicio: string;
     hora_inicio: string;
     hora_fin: string;
     duracion: number;
     estado: string;
-    notas: string;
+    notas: string | null;
 }
 
 interface ServicioPorCategoria {
@@ -69,7 +85,7 @@ interface AppointmentModalProps {
 const estadoOptions = [
     { value: 'agendada', label: 'Agendada', color: 'bg-blue-500' },
     { value: 'confirmada', label: 'Confirmada', color: 'bg-green-500' },
-    { value: 'en_proceso', label: 'En proceso', color: 'bg-orange-500' },
+    { value: 'cliente_llego', label: 'Cliente llegó', color: 'bg-orange-500' },
     { value: 'completada', label: 'Completada', color: 'bg-emerald-500' },
     { value: 'cancelada', label: 'Cancelada', color: 'bg-red-500' },
     { value: 'no_show', label: 'No show', color: 'bg-gray-500' },
@@ -386,16 +402,20 @@ export function AppointmentModal({
     // Estados para servicios del backend
     const [serviciosPorCategoria, setServiciosPorCategoria] = useState<ServicioPorCategoria[]>([]);
     const [serviciosLoading, setServiciosLoading] = useState(true);
+    const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([]);
 
     // Estados del formulario
     const [clienteSearch, setClienteSearch] = useState('');
-    const [clienteEncontrado, setClienteEncontrado] = useState<{ nombre: string; telefono: string; email?: string } | null>(null);
+    const [clientesEncontrados, setClientesEncontrados] = useState<ClienteEncontrado[]>([]);
+    const [clienteSeleccionado, setClienteSeleccionado] = useState<ClienteEncontrado | null>(null);
     const [showNewClientForm, setShowNewClientForm] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+    const [isCreatingClient, setIsCreatingClient] = useState(false);
 
     // Datos del nuevo cliente
     const [nuevoCliente, setNuevoCliente] = useState({
         nombre: '',
+        cedula: '',
         telefono: '',
         email: ''
     });
@@ -408,6 +428,15 @@ export function AppointmentModal({
         hora_inicio: selectedSlot?.hora || selectedCita?.hora_inicio || '09:00',
         notas: selectedCita?.notas || '',
         estado: selectedCita?.estado || 'agendada'
+    });
+
+    // Estado para abono
+    const [abonoEnabled, setAbonoEnabled] = useState(false);
+    const [abonoData, setAbonoData] = useState({
+        monto: '',
+        metodo_pago_id: 0,
+        referencia: '',
+        concepto: ''
     });
 
     // Cargar servicios al abrir el modal
@@ -433,41 +462,130 @@ export function AppointmentModal({
             }
         };
 
+        const loadMetodosPago = async () => {
+            try {
+                const metodos = await metodosPagoApi.listarMetodos(true);
+                setMetodosPago(metodos);
+                if (metodos.length > 0) {
+                    setAbonoData(prev => ({ ...prev, metodo_pago_id: metodos[0].id }));
+                }
+            } catch (error) {
+                console.error('Error cargando métodos de pago:', error);
+            }
+        };
+
         if (isOpen) {
             loadServicios();
+            loadMetodosPago();
+            setAbonoEnabled(false);
+            setAbonoData({ monto: '', metodo_pago_id: 0, referencia: '', concepto: '' });
         }
     }, [isOpen]);
 
-    // Si estamos editando, prellenar datos del cliente
+    // Si estamos editando, prellenar datos del cliente y servicio
     useEffect(() => {
         if (selectedCita) {
-            setClienteEncontrado({
+            // Prellenar cliente
+            setClienteSeleccionado({
+                id: selectedCita.cliente_id,
                 nombre: selectedCita.cliente.nombre,
                 telefono: selectedCita.cliente.telefono
             });
+            // Prellenar servicio y estado
+            setFormData(prev => ({
+                ...prev,
+                servicio_id: selectedCita.servicio_id,
+                estado: selectedCita.estado,
+                notas: selectedCita.notas || ''
+            }));
         }
     }, [selectedCita]);
 
     // Obtener todos los servicios planos
     const todosLosServicios = serviciosPorCategoria.flatMap(cat => cat.servicios);
 
-    // Simular búsqueda de cliente (TODO: conectar con API real)
-    const handleClienteSearch = (value: string) => {
+    // Búsqueda de cliente con API real
+    const handleClienteSearch = async (value: string) => {
         setClienteSearch(value);
-        setIsSearching(true);
-        setClienteEncontrado(null);
+        setClienteSeleccionado(null);
+        setClientesEncontrados([]);
         setShowNewClientForm(false);
 
-        setTimeout(() => {
+        if (value.length < 2) {
             setIsSearching(false);
-            if (value === '1234567890' || value.includes('300')) {
-                setClienteEncontrado({
-                    nombre: 'María González',
-                    telefono: value,
-                    email: 'maria@email.com'
-                });
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const clientes = await clientesApi.busquedaRapida(value, 5);
+            setClientesEncontrados(clientes.map(c => ({
+                id: c.id,
+                nombre: c.nombre,
+                apellido: c.apellido,
+                cedula: c.cedula,
+                telefono: c.telefono,
+                email: c.email
+            })));
+        } catch (error) {
+            console.error('Error buscando clientes:', error);
+            setClientesEncontrados([]);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Seleccionar un cliente de la lista
+    const handleSeleccionarCliente = (cliente: ClienteEncontrado) => {
+        setClienteSeleccionado(cliente);
+        setClientesEncontrados([]);
+        setClienteSearch('');
+    };
+
+    // Crear nuevo cliente
+    const handleCrearCliente = async () => {
+        if (!nuevoCliente.nombre || !nuevoCliente.telefono) {
+            toast.error('Nombre y teléfono son requeridos');
+            return;
+        }
+
+        setIsCreatingClient(true);
+        try {
+            const clienteData: ClienteCreateDTO = {
+                nombre: nuevoCliente.nombre.split(' ')[0], // Primer palabra como nombre
+                apellido: nuevoCliente.nombre.split(' ').slice(1).join(' ') || undefined, // Resto como apellido
+                cedula: nuevoCliente.cedula || undefined,
+                telefono: nuevoCliente.telefono || undefined,
+                email: nuevoCliente.email || undefined
+            };
+
+            const clienteCreado = await clientesApi.create(clienteData);
+
+            setClienteSeleccionado({
+                id: clienteCreado.id,
+                nombre: clienteCreado.nombre,
+                apellido: clienteCreado.apellido,
+                cedula: clienteCreado.cedula,
+                telefono: clienteCreado.telefono,
+                email: clienteCreado.email
+            });
+
+            setShowNewClientForm(false);
+            setNuevoCliente({ nombre: '', cedula: '', telefono: '', email: '' });
+            toast.success('Cliente creado correctamente');
+        } catch (error: any) {
+            console.error('Error creando cliente:', error);
+            const msg = error.response?.data?.detail;
+            if (typeof msg === 'string') {
+                toast.error(msg);
+            } else if (Array.isArray(msg)) {
+                toast.error(msg.map((e: any) => e.msg || e).join('. '));
+            } else {
+                toast.error('Error al crear el cliente');
             }
-        }, 500);
+        } finally {
+            setIsCreatingClient(false);
+        }
     };
 
     // Obtener servicio seleccionado
@@ -484,15 +602,75 @@ export function AppointmentModal({
         return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
     };
 
-    const handleSubmit = () => {
-        console.log('Guardando cita:', {
-            cliente: clienteEncontrado || nuevoCliente,
-            ...formData,
-            hora_fin: calcularHoraFin(),
-            servicio: servicioSeleccionado
-        });
-        toast.success(isEditMode ? 'Cita actualizada' : 'Cita agendada correctamente');
-        onClose();
+    const [isSavingCita, setIsSavingCita] = useState(false);
+
+    const handleSubmit = async () => {
+        // Si hay formulario de nuevo cliente abierto, primero crear el cliente
+        if (showNewClientForm && !clienteSeleccionado) {
+            await handleCrearCliente();
+            // Si hubo error creando cliente, no continuar
+            if (!clienteSeleccionado) return;
+        }
+
+        // Validar que hay cliente seleccionado
+        if (!clienteSeleccionado) {
+            toast.error('Debe seleccionar un cliente');
+            return;
+        }
+
+        // Validar que hay servicio seleccionado
+        if (!servicioSeleccionado) {
+            toast.error('Debe seleccionar un servicio');
+            return;
+        }
+
+        setIsSavingCita(true);
+        try {
+            if (isEditMode && selectedCita) {
+                // Actualizar cita existente
+                await citasApi.update(selectedCita.id, {
+                    cliente_id: clienteSeleccionado.id,
+                    especialista_id: formData.especialista_id,
+                    servicio_id: formData.servicio_id,
+                    fecha: formData.fecha,
+                    hora_inicio: formData.hora_inicio,
+                    notas: formData.notas || undefined,
+                    estado: formData.estado
+                });
+                toast.success('Cita actualizada correctamente');
+            } else {
+                // Crear nueva cita
+                const citaData: CitaCreate = {
+                    cliente_id: clienteSeleccionado.id,
+                    especialista_id: formData.especialista_id,
+                    servicio_id: formData.servicio_id,
+                    fecha: formData.fecha,
+                    hora_inicio: formData.hora_inicio,
+                    notas: formData.notas || undefined,
+                    ...(abonoEnabled && abonoData.monto ? {
+                        monto_abono: parseFloat(abonoData.monto),
+                        metodo_pago_id: abonoData.metodo_pago_id,
+                        referencia_pago: abonoData.referencia || undefined,
+                        concepto_abono: abonoData.concepto || undefined
+                    } : {})
+                };
+                await citasApi.create(citaData);
+                toast.success('Cita agendada correctamente');
+            }
+            onClose();
+        } catch (error: any) {
+            console.error('Error guardando cita:', error);
+            const msg = error.response?.data?.detail;
+            if (typeof msg === 'string') {
+                toast.error(msg);
+            } else if (Array.isArray(msg)) {
+                toast.error(msg.map((e: any) => e.msg || e).join('. '));
+            } else {
+                toast.error('Error al guardar la cita');
+            }
+        } finally {
+            setIsSavingCita(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -523,7 +701,7 @@ export function AppointmentModal({
                 {/* Contenido */}
                 <div className="p-6 space-y-5">
                     {/* Búsqueda de Cliente */}
-                    {!isEditMode && (
+                    {!isEditMode && !clienteSeleccionado && (
                         <div className="space-y-3">
                             <Label className="text-sm font-medium flex items-center gap-2">
                                 <Search className="w-4 h-4" />
@@ -531,7 +709,7 @@ export function AppointmentModal({
                             </Label>
                             <div className="relative">
                                 <Input
-                                    placeholder="Cédula o Teléfono"
+                                    placeholder="Cédula, teléfono o nombre"
                                     value={clienteSearch}
                                     onChange={(e) => handleClienteSearch(e.target.value)}
                                     className="pl-10 h-11"
@@ -544,40 +722,50 @@ export function AppointmentModal({
                                 )}
                             </div>
 
-                            {/* Resultado de búsqueda */}
-                            {clienteSearch && !isSearching && (
-                                <div className="mt-2">
-                                    {clienteEncontrado ? (
-                                        <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                            <Check className="w-5 h-5 text-green-600" />
-                                            <div>
-                                                <p className="font-medium text-green-700 dark:text-green-300">
-                                                    Cliente encontrado
-                                                </p>
-                                                <p className="text-sm text-green-600 dark:text-green-400">
-                                                    {clienteEncontrado.nombre}
-                                                </p>
+                            {/* Lista de resultados de búsqueda */}
+                            {clientesEncontrados.length > 0 && (
+                                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                                    {clientesEncontrados.map((cliente) => (
+                                        <button
+                                            key={cliente.id}
+                                            onClick={() => handleSeleccionarCliente(cliente)}
+                                            className="w-full p-3 flex items-center gap-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors text-left border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                                        >
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
+                                                {cliente.nombre.charAt(0)}{cliente.apellido?.charAt(0) || ''}
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                <AlertCircle className="w-5 h-5 text-yellow-600" />
-                                                <span className="text-sm text-yellow-700 dark:text-yellow-300">
-                                                    Cliente no encontrado
-                                                </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-gray-900 dark:text-white truncate">
+                                                    {cliente.nombre} {cliente.apellido || ''}
+                                                </p>
+                                                <div className="flex gap-3 text-xs text-gray-500">
+                                                    {cliente.cedula && <span>CC: {cliente.cedula}</span>}
+                                                    {cliente.telefono && <span>📞 {cliente.telefono}</span>}
+                                                </div>
                                             </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setShowNewClientForm(true)}
-                                                className="text-yellow-700 border-yellow-300 hover:bg-yellow-100"
-                                            >
-                                                <Plus className="w-4 h-4 mr-1" />
-                                                Crear nuevo
-                                            </Button>
-                                        </div>
-                                    )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* No se encontraron resultados */}
+                            {clienteSearch.length >= 2 && !isSearching && clientesEncontrados.length === 0 && (
+                                <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle className="w-5 h-5 text-yellow-600" />
+                                        <span className="text-sm text-yellow-700 dark:text-yellow-300">
+                                            No se encontró el cliente
+                                        </span>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowNewClientForm(true)}
+                                        className="text-yellow-700 border-yellow-300 hover:bg-yellow-100"
+                                    >
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Crear nuevo
+                                    </Button>
                                 </div>
                             )}
 
@@ -597,6 +785,14 @@ export function AppointmentModal({
                                         />
                                     </div>
                                     <div>
+                                        <Label className="text-xs">Cédula / Documento</Label>
+                                        <Input
+                                            value={nuevoCliente.cedula}
+                                            onChange={(e) => setNuevoCliente(prev => ({ ...prev, cedula: e.target.value }))}
+                                            placeholder="1234567890"
+                                        />
+                                    </div>
+                                    <div>
                                         <Label className="text-xs">Teléfono *</Label>
                                         <Input
                                             value={nuevoCliente.telefono}
@@ -613,28 +809,60 @@ export function AppointmentModal({
                                             placeholder="email@ejemplo.com"
                                         />
                                     </div>
+                                    <Button
+                                        onClick={handleCrearCliente}
+                                        disabled={isCreatingClient || !nuevoCliente.nombre || !nuevoCliente.telefono}
+                                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+                                    >
+                                        {isCreatingClient ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Creando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check className="w-4 h-4 mr-2" />
+                                                Crear Cliente
+                                            </>
+                                        )}
+                                    </Button>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* Info del Cliente (modo edición) */}
-                    {isEditMode && clienteEncontrado && (
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2">
-                            <div className="flex items-center gap-2 text-gray-900 dark:text-white">
-                                <User className="w-4 h-4" />
-                                <span className="font-medium">{clienteEncontrado.nombre}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
-                                <Phone className="w-4 h-4" />
-                                <span>{clienteEncontrado.telefono}</span>
-                            </div>
-                            {clienteEncontrado.email && (
-                                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
-                                    <Mail className="w-4 h-4" />
-                                    <span>{clienteEncontrado.email}</span>
+                    {/* Cliente seleccionado */}
+                    {clienteSeleccionado && (
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-semibold text-sm">
+                                        {clienteSeleccionado.nombre.charAt(0)}{clienteSeleccionado.apellido?.charAt(0) || ''}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-green-800 dark:text-green-200">
+                                            {clienteSeleccionado.nombre} {clienteSeleccionado.apellido || ''}
+                                        </p>
+                                        <div className="flex gap-3 text-xs text-green-600 dark:text-green-400">
+                                            {clienteSeleccionado.cedula && <span>CC: {clienteSeleccionado.cedula}</span>}
+                                            {clienteSeleccionado.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
+                                {!isEditMode && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setClienteSeleccionado(null);
+                                            setClienteSearch('');
+                                        }}
+                                        className="text-green-600 hover:text-green-800 hover:bg-green-100"
+                                    >
+                                        Cambiar
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -758,6 +986,86 @@ export function AppointmentModal({
                                 className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                             />
                         </div>
+
+                        {/* Sección de Abono (Solo para crear nuevas citas y cuando no estamos editando) */}
+                        {!isEditMode && (
+                            <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-medium flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                                        <div className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+                                            <span className="text-xs font-bold">$</span>
+                                        </div>
+                                        Registrar Abono Inicial
+                                    </Label>
+                                    <input
+                                        type="checkbox"
+                                        checked={abonoEnabled}
+                                        onChange={(e) => setAbonoEnabled(e.target.checked)}
+                                        className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 border-gray-300"
+                                    />
+                                </div>
+
+                                {abonoEnabled && (
+                                    <div className="grid grid-cols-2 gap-3 p-3 bg-purple-50 dark:bg-purple-900/10 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                                        {/* Monto */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Monto Abono *</Label>
+                                            <Input
+                                                type="number"
+                                                value={abonoData.monto}
+                                                onChange={(e) => setAbonoData(prev => ({ ...prev, monto: e.target.value }))}
+                                                placeholder="0.00"
+                                                className="h-9 bg-white dark:bg-gray-800"
+                                                min="0"
+                                            />
+                                        </div>
+
+                                        {/* Método de Pago */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs">Método de Pago *</Label>
+                                            <div className="relative">
+                                                <select
+                                                    value={abonoData.metodo_pago_id}
+                                                    onChange={(e) => setAbonoData(prev => ({ ...prev, metodo_pago_id: Number(e.target.value) }))}
+                                                    className="w-full h-9 pl-3 pr-8 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+                                                >
+                                                    {metodosPago.map((metodo) => (
+                                                        <option key={metodo.id} value={metodo.id}>
+                                                            {metodo.nombre}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                    <ChevronDown className="w-3 h-3 text-gray-500" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Referencia */}
+                                        <div className="space-y-1.5 col-span-2">
+                                            <Label className="text-xs">Referencia / Comprobante (opcional)</Label>
+                                            <Input
+                                                value={abonoData.referencia}
+                                                onChange={(e) => setAbonoData(prev => ({ ...prev, referencia: e.target.value }))}
+                                                placeholder="Ej: Transferencia #1234"
+                                                className="h-9 bg-white dark:bg-gray-800"
+                                            />
+                                        </div>
+
+                                        {/* Concepto */}
+                                        <div className="space-y-1.5 col-span-2">
+                                            <Label className="text-xs">Concepto (opcional)</Label>
+                                            <Input
+                                                value={abonoData.concepto}
+                                                onChange={(e) => setAbonoData(prev => ({ ...prev, concepto: e.target.value }))}
+                                                placeholder="Detalle adicional..."
+                                                className="h-9 bg-white dark:bg-gray-800"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -775,9 +1083,16 @@ export function AppointmentModal({
                         <Button
                             onClick={handleSubmit}
                             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                            disabled={(!clienteEncontrado && !nuevoCliente.nombre) || !servicioSeleccionado}
+                            disabled={isSavingCita || (!clienteSeleccionado && !showNewClientForm) || !servicioSeleccionado}
                         >
-                            {isEditMode ? 'Guardar Cambios' : 'Agendar Cita'}
+                            {isSavingCita ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Guardando...
+                                </>
+                            ) : (
+                                isEditMode ? 'Guardar Cambios' : 'Agendar Cita'
+                            )}
                         </Button>
                     </div>
                 </div>

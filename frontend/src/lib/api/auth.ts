@@ -24,6 +24,7 @@ export interface UserResponse {
     };
     especialista_id: number | null;
     estado: string;
+    primer_acceso: boolean;
     fecha_creacion: string;
     ultimo_acceso: string | null;
 }
@@ -94,4 +95,9 @@ export const authApi = {
         );
         return response.data.access_token;
     },
+
+    changePassword: async (data: any) => {
+        const response = await apiClient.put('/auth/change-password', data);
+        return response.data;
+    }
 };

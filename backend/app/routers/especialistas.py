@@ -33,25 +33,25 @@ def listar_especialistas(
     limit: int = 100,
     estado: Optional[str] = None,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("especialistas.ver"))
+    user: dict = Depends(require_permission("especialistas.ver"))
 ):
     """
     BE-ESP-001: Listar especialistas
     Permiso: especialistas.ver
     """
-    return EspecialistaService.get_all(db, skip, limit, estado)
+    return EspecialistaService.get_all(db, user["user"].sede_id, skip, limit, estado)
 
 
 @router.get("/activos", response_model=List[EspecialistaResponse])
 def listar_especialistas_activos(
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("agenda.ver"))
+    user: dict = Depends(require_permission("agenda.ver"))
 ):
     """
     BE-ESP-006: Listar especialistas activos
     Permiso: agenda.ver
     """
-    return EspecialistaService.get_activos(db)
+    return EspecialistaService.get_activos(db, user["user"].sede_id)
 
 
 @router.get("/{id}", response_model=EspecialistaResponse)
@@ -77,13 +77,14 @@ def obtener_especialista(
 def crear_especialista(
     especialista: EspecialistaCreate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("especialistas.crear"))
+    auth_context: dict = Depends(require_permission("especialistas.crear"))
 ):
     """
     BE-ESP-003: Crear especialista
     Permiso: especialistas.crear
     """
-    return EspecialistaService.create(db, especialista)
+    current_user = auth_context['user']
+    return EspecialistaService.create(db, especialista, admin_sede_id=current_user.sede_id)
 
 
 @router.put("/{id}", response_model=EspecialistaResponse)

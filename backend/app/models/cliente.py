@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, Date, Text, DateTime, CheckConstraint, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
+
 from sqlalchemy.sql import func
 from ..database import Base
 
@@ -15,6 +17,8 @@ class Cliente(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(100), nullable=False, index=True)
     apellido = Column(String(100), index=True)
+    cedula = Column(String(20), unique=True, index=True)  # Cédula/Documento de identidad
+    sede_id = Column(Integer, ForeignKey("sedes.id"), index=True)
     telefono = Column(String(20), index=True)
     email = Column(String(100), index=True)
     
@@ -65,7 +69,7 @@ class ClientePreferencia(Base):
     cliente_id = Column(Integer, ForeignKey("clientes.id", ondelete="CASCADE"), nullable=False, unique=True)
     
     # Preferencias (JSONB para productos favoritos)
-    productos_favoritos = Column(JSONB)  # Array de IDs: [1, 5, 12]
+    productos_favoritos = Column(JSON)  # Array de IDs: [1, 5, 12]
     alergias = Column(Text)
     notas_servicio = Column(Text)
     

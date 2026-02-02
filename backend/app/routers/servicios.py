@@ -128,7 +128,7 @@ def listar_servicios(
     categoria_id: Optional[int] = None,
     estado: Optional[str] = None,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("servicios.ver"))
+    user: dict = Depends(require_permission("servicios.ver"))
 ):
     """
     BE-SER-001: Listar servicios
@@ -138,13 +138,13 @@ def listar_servicios(
     - categoria_id: Filtrar por categoría
     - estado: Filtrar por estado (activo/inactivo)
     """
-    return ServicioService.get_all(db, skip, limit, categoria_id, estado)
+    return ServicioService.get_all(db, user["user"].sede_id, skip, limit, categoria_id, estado)
 
 
 @servicios_router.get("/activos", response_model=List[ServicioPorCategoriaResponse])
 def listar_servicios_activos(
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("agenda.ver"))
+    user: dict = Depends(require_permission("agenda.ver"))
 ):
     """
     BE-SER-006: Servicios activos agrupados por categoría
@@ -153,7 +153,7 @@ def listar_servicios_activos(
     Retorna los servicios activos organizados por categoría para
     facilitar la selección en el agendamiento de citas.
     """
-    return ServicioService.get_activos_por_categoria(db)
+    return ServicioService.get_activos_por_categoria(db, user["user"].sede_id)
 
 
 @servicios_router.get("/{id}", response_model=ServicioConCategoriaResponse)

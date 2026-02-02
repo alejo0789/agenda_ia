@@ -7,11 +7,19 @@ from ..utils.jwt import create_access_token, create_refresh_token, verify_token
 from .password_service import PasswordService
 from .audit_service import AuditService
 from typing import Optional
+from sqlalchemy import or_
 
 class AuthService:
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str, ip: str = None) -> Optional[Usuario]:
-        user = db.query(Usuario).filter(Usuario.username == username).first()
+        # Support login by username or email
+        from sqlalchemy import func
+        user = db.query(Usuario).filter(
+            or_(
+                func.lower(Usuario.username) == func.lower(username),
+                func.lower(Usuario.email) == func.lower(username)
+            )
+        ).first()
         
         if not user:
             return None
@@ -34,7 +42,7 @@ class AuthService:
         
         if not verify_password(password, user.password_hash):
             # Increment failed attempts
-            user.intentos_fallidos += 1
+            user.intentos_fallidos = (user.intentos_fallidos or 0) + 1
             
             # Block after 5 failed attempts (RN-AUTH-001)
             if user.intentos_fallidos >= 5:
@@ -151,5 +159,3 @@ class AuthService:
         AuditService.log_password_change(db, user.id, ip)
         
         db.commit()
-    
-    # Remove the old log_audit method as we're using AuditService now

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/authStore';
 import {
     Calendar,
     Users,
@@ -18,82 +19,162 @@ import {
     ChevronRight,
     Sparkles,
     LayoutDashboard,
+    Building2,
+    Shield,
 } from 'lucide-react';
 
-const menuItems = [
+const allMenuItems = [
     {
         title: 'Dashboard',
         icon: LayoutDashboard,
         href: '/dashboard',
+        roles: ['Administrador', 'Cajero', 'Recepcionista'],
     },
     {
         title: 'Calendario',
         icon: Calendar,
         href: '/dashboard/calendario',
+        roles: ['Administrador', 'Cajero', 'Recepcionista'],
     },
     {
         title: 'Especialistas',
         icon: UserCircle,
         href: '/dashboard/especialistas',
+        roles: ['Administrador', 'Recepcionista'],
     },
     {
         title: 'Servicios',
         icon: Scissors,
         href: '/dashboard/servicios',
+        roles: ['Administrador'],
     },
     {
         title: 'Clientes',
         icon: Users,
         href: '/dashboard/clientes',
+        roles: ['Administrador', 'Cajero', 'Recepcionista'],
     },
     {
         title: 'Caja',
         icon: DollarSign,
         href: '/dashboard/caja',
+        roles: ['Administrador', 'Cajero', 'Especialista'],
     },
     {
         title: 'Inventario',
         icon: Package,
         href: '/dashboard/inventario',
+        roles: ['Administrador', 'Cajero'],
     },
     {
         title: 'Nómina',
         icon: Wallet,
         href: '/dashboard/nomina',
+        roles: ['Administrador'],
     },
     {
         title: 'Reportes',
         icon: FileText,
         href: '/dashboard/reportes',
+        roles: ['Administrador'],
     },
     {
         title: 'Usuarios',
         icon: Users,
-        href: '/dashboard/usuarios',
+        href: '/dashboard/admin/usuarios',
+        roles: ['Administrador'],
+    },
+    {
+        title: 'Sedes',
+        icon: Building2,
+        href: '/dashboard/admin/sedes',
+        roles: ['Administrador'],
+    },
+    {
+        title: 'Roles y Permisos',
+        icon: Shield,
+        href: '/dashboard/admin/roles',
+        roles: ['Administrador'],
     },
     {
         title: 'Configuración',
         icon: Settings,
         href: '/dashboard/configuracion',
+        roles: ['Administrador'],
     },
 ];
 
 export default function Sidebar() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const [isOpenMobile, setIsOpenMobile] = useState(false);
+    const { user } = useAuthStore();
+    const [menuItems, setMenuItems] = useState(allMenuItems);
+
+    useEffect(() => {
+        // Cerrar sidebar al cambiar de ruta en móvil
+        setIsOpenMobile(false);
+    }, [pathname]);
+
+    useEffect(() => {
+        if (user && user.rol) {
+            const roleName = user.rol.nombre;
+            const filtered = allMenuItems.filter(item => {
+                // Check role permission
+                const hasRole = item.roles ? item.roles.includes(roleName) : true;
+                if (!hasRole) return false;
+
+                // Special restriction: ONLY Super Admin (no sede_id) can see Sedes
+                if (item.title === 'Sedes' && user.sede_id !== null) {
+                    return false;
+                }
+
+                return true;
+            }).map(item => {
+                // Modificar link para Especialista en Caja
+                if (roleName === 'Especialista' && item.title === 'Caja') {
+                    return { ...item, href: '/dashboard/caja/pos' };
+                }
+                return item;
+            });
+            setMenuItems(filtered);
+        }
+    }, [user]);
 
     return (
         <>
+            {/* Mobile Toggle Button */}
+            <button
+                onClick={() => setIsOpenMobile(true)}
+                className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-800"
+            >
+                <ChevronRight className="w-5 h-5" />
+            </button>
+
             {/* Mobile backdrop */}
-            <div className="lg:hidden fixed inset-0 bg-gray-900/50 z-40" />
+            {isOpenMobile && (
+                <div
+                    className="lg:hidden fixed inset-0 bg-gray-900/50 z-40 backdrop-blur-sm"
+                    onClick={() => setIsOpenMobile(false)}
+                />
+            )}
 
             {/* Sidebar */}
             <aside
                 className={cn(
                     'fixed top-0 left-0 z-50 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out',
-                    collapsed ? 'w-16' : 'w-64'
+                    collapsed ? 'w-16' : 'w-64',
+                    'lg:translate-x-0', // Siempre visible en desktop
+                    isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0' // Toggle en móvil
                 )}
             >
+                {/* Close Button Mobile */}
+                <button
+                    onClick={() => setIsOpenMobile(false)}
+                    className="lg:hidden absolute -right-12 top-4 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md text-gray-600 dark:text-gray-400"
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                </button>
                 {/* Logo */}
                 <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
                     {!collapsed && (
@@ -118,10 +199,10 @@ export default function Sidebar() {
                     <ul className="space-y-1">
                         {menuItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = pathname === item.href;
+                            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
 
                             return (
-                                <li key={item.href}>
+                                <li key={item.title}>
                                     <Link
                                         href={item.href}
                                         className={cn(

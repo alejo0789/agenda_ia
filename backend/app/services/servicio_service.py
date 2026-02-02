@@ -17,15 +17,16 @@ class ServicioService:
     @staticmethod
     def get_all(
         db: Session, 
+        sede_id: int,
         skip: int = 0, 
         limit: int = 100,
         categoria_id: Optional[int] = None,
         estado: Optional[str] = None
     ) -> List[Servicio]:
         """
-        BE-SER-001: Listar servicios con filtros opcionales
+        BE-SER-001: Listar servicios con filtros opcionales por sede
         """
-        query = db.query(Servicio).options(joinedload(Servicio.categoria))
+        query = db.query(Servicio).filter(Servicio.sede_id == sede_id).options(joinedload(Servicio.categoria))
         
         if categoria_id:
             query = query.filter(Servicio.categoria_id == categoria_id)
@@ -65,6 +66,7 @@ class ServicioService:
         
         db_servicio = Servicio(
             nombre=servicio.nombre,
+            sede_id=servicio.sede_id, # Asumiendo que el esquema tiene sede_id o se pasa por separado
             descripcion=servicio.descripcion,
             duracion_minutos=servicio.duracion_minutos,
             precio_base=servicio.precio_base,
@@ -146,29 +148,30 @@ class ServicioService:
         db.commit()
     
     @staticmethod
-    def get_activos(db: Session) -> List[Servicio]:
+    def get_activos(db: Session, sede_id: int) -> List[Servicio]:
         """
-        Obtener solo servicios activos
+        Obtener solo servicios activos de una sede
         """
         return db.query(Servicio)\
             .options(joinedload(Servicio.categoria))\
-            .filter(Servicio.estado == "activo")\
+            .filter(Servicio.estado == "activo", Servicio.sede_id == sede_id)\
             .order_by(Servicio.nombre)\
             .all()
     
     @staticmethod
-    def get_activos_por_categoria(db: Session) -> List[ServicioPorCategoriaResponse]:
+    def get_activos_por_categoria(db: Session, sede_id: int) -> List[ServicioPorCategoriaResponse]:
         """
-        BE-SER-006: Servicios activos agrupados por categoría
+        BE-SER-006: Servicios activos agrupados por categoría para una sede
         """
-        # Obtener todas las categorías ordenadas
+        # Obtener todas las categorías ordenadas de la sede
         categorias = db.query(CategoriaServicio)\
+            .filter(CategoriaServicio.sede_id == sede_id)\
             .order_by(CategoriaServicio.orden_visualizacion)\
             .all()
         
-        # Obtener servicios activos
+        # Obtener servicios activos de la sede
         servicios_activos = db.query(Servicio)\
-            .filter(Servicio.estado == "activo")\
+            .filter(Servicio.estado == "activo", Servicio.sede_id == sede_id)\
             .order_by(Servicio.nombre)\
             .all()
         

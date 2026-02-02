@@ -10,6 +10,7 @@ class Especialista(Base):
     nombre = Column(String(100), nullable=False)
     apellido = Column(String(100), nullable=False)
     documento_identidad = Column(String(20), unique=True, index=True)
+    sede_id = Column(Integer, ForeignKey("sedes.id"), index=True)
     telefono = Column(String(20))
     email = Column(String(100), unique=True)
     foto = Column(String)

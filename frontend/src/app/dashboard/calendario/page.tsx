@@ -10,13 +10,16 @@ import {
     Plus,
     Filter,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CalendarGrid } from '@/components/calendario/CalendarGrid';
 import { AppointmentModal } from '@/components/calendario/AppointmentModal';
 import { DatePickerModal } from '@/components/calendario/DatePickerModal';
+import { IACitasModal } from '@/components/calendario/IACitasModal';
 import { especialistasApi } from '@/lib/api/especialistas';
+import { citasApi, CitaListItem } from '@/lib/api/citas';
 import { Especialista, Horario, Bloqueo } from '@/types/especialista';
 import { toast } from 'sonner';
 
@@ -41,54 +44,52 @@ interface EspecialistaConHorario extends Especialista {
 
 interface Cita {
     id: number;
-    cliente: { nombre: string; telefono: string };
+    cliente_id: number;
+    cliente: { nombre: string; telefono: string | null };
     especialista_id: number;
+    servicio_id: number;
     servicio: string;
     hora_inicio: string;
     hora_fin: string;
     duracion: number;
     estado: string;
-    notas: string;
+    notas: string | null;
 }
 
-// Datos de citas de ejemplo (esto vendrá del backend)
-const mockCitas: Cita[] = [
-    {
-        id: 1,
-        cliente: { nombre: 'Laura Gómez', telefono: '+57 300 123 4567' },
-        especialista_id: 1,
-        servicio: 'Alisado Brasileño',
-        hora_inicio: '09:30',
-        hora_fin: '11:00',
-        duracion: 90,
-        estado: 'confirmada',
-        notas: ''
-    },
-    {
-        id: 2,
-        cliente: { nombre: 'Sofia Torres', telefono: '+57 311 456 7890' },
-        especialista_id: 2,
-        servicio: 'Tinte',
-        hora_inicio: '10:30',
-        hora_fin: '11:30',
-        duracion: 60,
-        estado: 'en_proceso',
-        notas: ''
-    },
-];
+// Función para convertir CitaListItem del backend al formato del calendario
+function convertirCitaBackendALocal(cita: CitaListItem): Cita {
+    return {
+        id: cita.id,
+        cliente_id: cita.cliente_id,
+        cliente: {
+            nombre: cita.cliente_nombre,
+            telefono: cita.cliente_telefono ?? null
+        },
+        especialista_id: cita.especialista_id,
+        servicio_id: cita.servicio_id,
+        servicio: cita.servicio_nombre,
+        hora_inicio: cita.hora_inicio,
+        hora_fin: cita.hora_fin,
+        duracion: cita.duracion_minutos,
+        estado: cita.estado,
+        notas: cita.notas || ''
+    };
+}
 
 export default function CalendarioPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [especialistas, setEspecialistas] = useState<EspecialistaConHorario[]>([]);
-    const [citas, setCitas] = useState<Cita[]>(mockCitas);
+    const [citas, setCitas] = useState<Cita[]>([]);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+    const [showIACitasModal, setShowIACitasModal] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{
         especialistaId: number;
         hora: string;
     } | null>(null);
     const [selectedCita, setSelectedCita] = useState<Cita | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingCitas, setIsLoadingCitas] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -153,6 +154,34 @@ export default function CalendarioPage() {
             calendarRef.current.scrollTop = Math.max(0, scrollPosition - 100);
         }
     }, [selectedDate]);
+
+    // Cargar citas del backend cuando cambia la fecha
+    const loadCitas = useCallback(async () => {
+        setIsLoadingCitas(true);
+        try {
+            const fechaStr = format(selectedDate, 'yyyy-MM-dd');
+            const citasData = await citasApi.getByFecha(fechaStr);
+            setCitas(citasData.map(convertirCitaBackendALocal));
+        } catch (err) {
+            console.error('Error cargando citas:', err);
+            // No mostrar error de toast aquí para evitar spam
+        } finally {
+            setIsLoadingCitas(false);
+        }
+    }, [selectedDate]);
+
+    useEffect(() => {
+        loadCitas();
+    }, [loadCitas]);
+
+    // Recargar citas cuando se cierra el modal
+    const handleCloseModal = () => {
+        setShowAppointmentModal(false);
+        setSelectedSlot(null);
+        setSelectedCita(null);
+        // Recargar citas después de cerrar el modal
+        loadCitas();
+    };
 
     // Calcular disponibilidad para el día seleccionado
     const disponibilidadPorEspecialista = useMemo(() => {
@@ -275,7 +304,7 @@ export default function CalendarioPage() {
         setShowAppointmentModal(true);
     };
 
-    const handleCitaDrop = (citaId: number, newEspecialistaId: number, newHora: string) => {
+    const handleCitaDrop = async (citaId: number, newEspecialistaId: number, newHora: string) => {
         const disponibilidad = disponibilidadPorEspecialista[newEspecialistaId];
 
         if (!disponibilidad || disponibilidad.bloqueados.has(newHora) || !disponibilidad.horasDisponibles.has(newHora)) {
@@ -283,30 +312,25 @@ export default function CalendarioPage() {
             return;
         }
 
-        setCitas(prev => prev.map(cita => {
-            if (cita.id === citaId) {
-                const [hours, minutes] = newHora.split(':').map(Number);
-                const endHours = hours + Math.floor(cita.duracion / 60);
-                const endMinutes = minutes + (cita.duracion % 60);
-                const hora_fin = `${String(endHours + Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+        try {
+            // Actualizar en el backend
+            await citasApi.update(citaId, {
+                especialista_id: newEspecialistaId,
+                hora_inicio: newHora
+            });
 
-                return {
-                    ...cita,
-                    especialista_id: newEspecialistaId,
-                    hora_inicio: newHora,
-                    hora_fin
-                };
+            // Recargar las citas del backend
+            loadCitas();
+            toast.success('Cita movida correctamente');
+        } catch (error: any) {
+            console.error('Error moviendo cita:', error);
+            const msg = error.response?.data?.detail;
+            if (typeof msg === 'string') {
+                toast.error(msg);
+            } else {
+                toast.error('Error al mover la cita');
             }
-            return cita;
-        }));
-
-        toast.success('Cita movida correctamente');
-    };
-
-    const handleCloseModal = () => {
-        setShowAppointmentModal(false);
-        setSelectedSlot(null);
-        setSelectedCita(null);
+        }
     };
 
     if (isLoading) {
@@ -403,6 +427,13 @@ export default function CalendarioPage() {
                             <Filter className="h-4 w-4" />
                         </Button>
                         <Button
+                            className="bg-gradient-to-r from-amber-500 via-orange-500 to-pink-500 hover:from-amber-600 hover:via-orange-600 hover:to-pink-600 shadow-lg shadow-orange-500/25 transition-all hover:shadow-orange-500/40"
+                            onClick={() => setShowIACitasModal(true)}
+                        >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            IA Citas
+                        </Button>
+                        <Button
                             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                             onClick={() => {
                                 setSelectedSlot(null);
@@ -458,6 +489,15 @@ export default function CalendarioPage() {
                     }}
                 />
             )}
+
+            {/* Modal de IA Citas */}
+            <IACitasModal
+                isOpen={showIACitasModal}
+                onClose={() => setShowIACitasModal(false)}
+                onCitaCreated={() => {
+                    loadCitas();
+                }}
+            />
         </div>
     );
 }

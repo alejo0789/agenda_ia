@@ -50,6 +50,12 @@ export default function LoginPage() {
             const nombreUsuario = response.user?.nombre || response.user?.username || 'Usuario';
             toast.success(`¡Bienvenido, ${nombreUsuario}!`);
 
+            if (response.user?.primer_acceso) {
+                console.log('Usuario requiere configuración inicial, redirigiendo...');
+                router.push('/primer-acceso');
+                return;
+            }
+
             console.log('Redirigiendo a dashboard...');
             router.push('/dashboard');
         } catch (error: any) {
@@ -104,6 +110,9 @@ export default function LoginPage() {
                                 {...register('username')}
                                 className={errors.username ? 'border-red-500' : ''}
                                 disabled={isLoading}
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck="false"
                             />
                             {errors.username && (
                                 <p className="text-sm text-red-500">{errors.username.message}</p>

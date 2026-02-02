@@ -17,9 +17,9 @@ class EspecialistaService:
     """Servicio para gestión de especialistas con validaciones de reglas de negocio"""
 
     @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 100, estado: Optional[str] = None) -> List[Especialista]:
-        """Listar todos los especialistas con filtros opcionales"""
-        query = db.query(Especialista)
+    def get_all(db: Session, sede_id: int, skip: int = 0, limit: int = 100, estado: Optional[str] = None) -> List[Especialista]:
+        """Listar todos los especialistas de una sede con filtros opcionales"""
+        query = db.query(Especialista).filter(Especialista.sede_id == sede_id)
         
         if estado:
             query = query.filter(Especialista.estado == estado)
@@ -27,9 +27,9 @@ class EspecialistaService:
         return query.offset(skip).limit(limit).all()
 
     @staticmethod
-    def get_activos(db: Session) -> List[Especialista]:
-        """Listar solo especialistas activos (para agenda)"""
-        return db.query(Especialista).filter(Especialista.estado == "activo").all()
+    def get_activos(db: Session, sede_id: int) -> List[Especialista]:
+        """Listar solo especialistas activos de una sede (para agenda)"""
+        return db.query(Especialista).filter(and_(Especialista.estado == "activo", Especialista.sede_id == sede_id)).all()
 
     @staticmethod
     def get_by_id(db: Session, especialista_id: int) -> Optional[Especialista]:
@@ -37,7 +37,7 @@ class EspecialistaService:
         return db.query(Especialista).filter(Especialista.id == especialista_id).first()
 
     @staticmethod
-    def create(db: Session, especialista: EspecialistaCreate) -> Especialista:
+    def create(db: Session, especialista: EspecialistaCreate, admin_sede_id: Optional[int] = None) -> Especialista:
         """
         Crear nuevo especialista
         RN-ESP-001: Documento y email únicos
@@ -64,10 +64,65 @@ class EspecialistaService:
                     detail="Ya existe un especialista con ese email"
                 )
 
-        db_especialista = Especialista(**especialista.model_dump())
+        db_especialista = Especialista(
+            **especialista.model_dump(exclude={'crear_usuario'}),
+            sede_id=admin_sede_id
+        )
         db.add(db_especialista)
         db.commit()
         db.refresh(db_especialista)
+        
+        # AUTOMATIC USER CREATION
+        # Check explicit flag or implicit desire (if email exists and not explicit False)
+        should_create_user = getattr(especialista, 'crear_usuario', True)
+        
+        if should_create_user and especialista.email:
+             from ..models.user import Usuario, Rol
+             from ..services.password_service import PasswordService
+             
+             from sqlalchemy import func
+             # Check if user exists
+             existing_user = db.query(Usuario).filter(func.lower(Usuario.email) == func.lower(especialista.email)).first()
+             if not existing_user:
+                 # Find Specialist Role
+                 rol_especialista = db.query(Rol).filter(Rol.nombre.ilike("%especialista%")).first()
+                 
+                 # If role not found, maybe fallback to standard user or log error? 
+                 # We assume role exists. If not, we skip user creation to avoid breaking flow.
+                 if rol_especialista:
+                     # Generate username
+                     base_username = especialista.email.split("@")[0]
+                     username = base_username
+                     counter = 1
+                     from sqlalchemy import func
+                     while db.query(Usuario).filter(func.lower(Usuario.username) == func.lower(username)).first():
+                         username = f"{base_username}{counter}"
+                         counter += 1
+                     
+                     # Create User
+                     # Default password: "Especialista123!"
+                     hashed = PasswordService.hash_password("Especialista123!")
+                     
+                     new_user = Usuario(
+                         nombre=f"{especialista.nombre} {especialista.apellido}",
+                         username=username,
+                         email=especialista.email,
+                         password_hash=hashed,
+                         rol_id=rol_especialista.id,
+                         especialista_id=db_especialista.id,
+                         estado="activo",
+                         primer_acceso=True,
+                         requiere_cambio_password=True,
+                         sede_id=admin_sede_id # Assigned to admin's sede
+                     )
+                     db.add(new_user)
+                     db.commit()
+             else:
+                 # Link existing user if not linked
+                 if not existing_user.especialista_id:
+                     existing_user.especialista_id = db_especialista.id
+                     db.commit()
+
         return db_especialista
 
     @staticmethod

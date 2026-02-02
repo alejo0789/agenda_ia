@@ -56,18 +56,24 @@ async def get_current_active_user(
     return current_user
 
 
-def require_permission(permission_code: str):
+def require_permission(permission_code):
     """
-    Dependency to check if current user has a specific permission
+    Dependency to check if current user has a specific permission or any from a list
     Usage: Depends(require_permission("especialistas.ver"))
+    Usage: Depends(require_permission(["agenda.crear", "agenda.ver"]))
     """
     async def permission_checker(
         current_user: Usuario = Depends(get_current_user),
         db: Session = Depends(get_db)
     ):
-        has_permission = PermissionService.user_has_permission(
-            db, current_user.id, permission_code
-        )
+        if isinstance(permission_code, list):
+            has_permission = PermissionService.user_has_any_permission(
+                db, current_user.id, permission_code
+            )
+        else:
+            has_permission = PermissionService.user_has_permission(
+                db, current_user.id, permission_code
+            )
         
         if not has_permission:
             raise HTTPException(

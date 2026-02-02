@@ -38,6 +38,7 @@ interface ClienteFormProps {
 const initialFormData: ClienteFormData = {
     nombre: '',
     apellido: '',
+    cedula: '',
     telefono: '',
     email: '',
     fecha_nacimiento: '',
@@ -64,6 +65,7 @@ export default function ClienteForm({
             setFormData({
                 nombre: clienteToEdit.nombre || '',
                 apellido: clienteToEdit.apellido || '',
+                cedula: clienteToEdit.cedula || '',
                 telefono: clienteToEdit.telefono || '',
                 email: clienteToEdit.email || '',
                 fecha_nacimiento: clienteToEdit.fecha_nacimiento || '',
@@ -139,6 +141,7 @@ export default function ClienteForm({
                 const updateData: ClienteUpdateDTO = {
                     nombre: formData.nombre.trim(),
                     apellido: formData.apellido?.trim() || undefined,
+                    cedula: formData.cedula?.trim() || undefined,
                     telefono: formData.telefono?.trim() || undefined,
                     email: formData.email?.trim() || undefined,
                     fecha_nacimiento: formData.fecha_nacimiento || undefined,
@@ -150,6 +153,7 @@ export default function ClienteForm({
                 const createData: ClienteCreateDTO = {
                     nombre: formData.nombre.trim(),
                     apellido: formData.apellido?.trim() || undefined,
+                    cedula: formData.cedula?.trim() || undefined,
                     telefono: formData.telefono?.trim() || undefined,
                     email: formData.email?.trim() || undefined,
                     fecha_nacimiento: formData.fecha_nacimiento || undefined,
@@ -256,6 +260,28 @@ export default function ClienteForm({
                                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                                 />
                             </div>
+                        </div>
+
+                        {/* Cédula */}
+                        <div>
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <FileText className="w-4 h-4" />
+                                Cédula / Documento
+                            </label>
+                            <input
+                                type="text"
+                                name="cedula"
+                                value={formData.cedula}
+                                onChange={handleChange}
+                                placeholder="1234567890"
+                                className={`w-full px-4 py-3 rounded-xl border ${errors.cedula
+                                    ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
+                                    : 'border-gray-200 dark:border-gray-700 focus:ring-purple-500'
+                                    } bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:border-transparent transition-all`}
+                            />
+                            {errors.cedula && (
+                                <p className="mt-1 text-xs text-red-500">{errors.cedula}</p>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

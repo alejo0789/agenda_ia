@@ -1,10 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import users, auth, roles, especialistas, servicios, clientes
+from .routers import users, auth, roles, especialistas, servicios, clientes, citas, productos, inventario, sedes, dashboard
+from .routers import cajas, facturas, facturas_pendientes, ventas, comisiones, abonos, reportes, nomina
 from .database import engine, Base
 
 # Importar modelos para que estén registrados en Base.metadata
-from .models import user, auth as auth_models, especialista, servicio, cliente
+from .models import user, auth as auth_models, especialista, servicio, cliente, cita, sede
+from .models import producto as producto_models  # Nuevo módulo de productos e inventario
+from .models import caja as caja_models  # Módulo de caja
+from .models import abono as abono_models  # Módulo de abonos
 
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
@@ -32,6 +36,14 @@ app = FastAPI(
     - **Usuarios**: Gestión de usuarios del sistema
     - **Roles y Permisos**: Control de acceso
     - **Especialistas**: Gestión de estilistas
+    - **Servicios**: Catálogo de servicios
+    - **Clientes**: Gestión de clientes
+    - **Citas**: Gestión de agenda
+    - **Productos**: Catálogo de productos e inventario
+    - **Inventario**: Control de stock y movimientos
+    - **Caja/POS**: Facturación, pagos mixtos, apertura/cierre de caja
+    - **Ventas**: Reportes de ventas diarias y por período
+    - **Comisiones**: Consulta de comisiones de especialistas
     """,
     version="1.0.0",
     swagger_ui_parameters={
@@ -40,16 +52,20 @@ app = FastAPI(
     }
 )
 
+# Configuración de CORS
 origins = [
     "http://localhost",
-    "http://localhost:3000", # React default
-    "http://localhost:3001", # Next.js alternate port
-    "http://localhost:5173", # Vite default
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://192.168.1.171:3000",
+    "http://192.168.1.171:3001",
+    "http://192.168.1.8:3000",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex="https://.*\.railway\.app", # Permitir dominios de Railway
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,15 +73,36 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(dashboard.router)
 app.include_router(users.router)
+app.include_router(sedes.router)
 app.include_router(roles.router)
 app.include_router(roles.permisos_router)
 app.include_router(especialistas.router)
 app.include_router(servicios.categorias_router)
 app.include_router(servicios.servicios_router)
-app.include_router(clientes.router)
 app.include_router(clientes.etiquetas_router)
+app.include_router(clientes.router)
+app.include_router(citas.router)
+
+# Routers de Productos e Inventario
+app.include_router(productos.proveedores_router)
+app.include_router(productos.productos_router)
+app.include_router(inventario.router)
+
+# Routers de Caja/POS
+app.include_router(cajas.router)
+app.include_router(facturas.router)
+app.include_router(facturas_pendientes.router)
+app.include_router(ventas.ventas_router)
+app.include_router(ventas.metodos_router)
+app.include_router(comisiones.router)
+app.include_router(abonos.router)
+app.include_router(reportes.router)
+app.include_router(nomina.router)
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Club Alisados API"}
+
+

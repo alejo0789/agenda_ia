@@ -162,10 +162,8 @@ export const etiquetasApi = {
     /**
      * Listar todas las etiquetas
      */
-    getAll: async (incluirTotales: boolean = true): Promise<ClienteEtiqueta[]> => {
-        const response = await apiClient.get('/clientes/etiquetas', {
-            params: { incluir_totales: incluirTotales }
-        });
+    getAll: async (): Promise<ClienteEtiqueta[]> => {
+        const response = await apiClient.get('/clientes/etiquetas');
         return response.data;
     },
 

@@ -20,7 +20,7 @@ class EspecialistaBase(BaseModel):
 
 
 class EspecialistaCreate(EspecialistaBase):
-    pass
+    crear_usuario: Optional[bool] = True
 
 
 class EspecialistaUpdate(BaseModel):

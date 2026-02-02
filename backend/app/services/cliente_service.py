@@ -23,14 +23,15 @@ class ClienteService:
     @staticmethod
     def get_all(
         db: Session,
+        sede_id: int,
         skip: int = 0,
         limit: int = 100,
         estado: Optional[str] = None,
         query: Optional[str] = None,
         etiqueta_id: Optional[int] = None
     ) -> List[Cliente]:
-        """Listar todos los clientes con filtros opcionales"""
-        q = db.query(Cliente)
+        """Listar todos los clientes de una sede con filtros opcionales"""
+        q = db.query(Cliente).filter(Cliente.sede_id == sede_id)
         
         # Filtro por estado
         if estado and estado != 'todos':
@@ -59,6 +60,7 @@ class ClienteService:
     @staticmethod
     def get_all_paginado(
         db: Session,
+        sede_id: int,
         query: Optional[str] = None,
         estado: str = 'activo',
         etiqueta_id: Optional[int] = None,
@@ -69,8 +71,8 @@ class ClienteService:
         ordenar_por: str = 'nombre',
         orden: str = 'asc'
     ) -> dict:
-        """Lista clientes con filtros, búsqueda y paginación"""
-        q = db.query(Cliente)
+        """Lista clientes de una sede con filtros, búsqueda y paginación"""
+        q = db.query(Cliente).filter(Cliente.sede_id == sede_id)
         
         # Filtro por estado
         if estado != 'todos':
@@ -128,6 +130,7 @@ class ClienteService:
                 "id": cliente.id,
                 "nombre": cliente.nombre,
                 "apellido": cliente.apellido,
+                "cedula": cliente.cedula,
                 "telefono": cliente.telefono,
                 "email": cliente.email,
                 "total_visitas": cliente.total_visitas or 0,
@@ -145,9 +148,9 @@ class ClienteService:
         }
 
     @staticmethod
-    def get_activos(db: Session) -> List[Cliente]:
-        """Listar solo clientes activos"""
-        return db.query(Cliente).filter(Cliente.estado == "activo").order_by(Cliente.nombre, Cliente.apellido).all()
+    def get_activos(db: Session, sede_id: int) -> List[Cliente]:
+        """Listar solo clientes activos de una sede"""
+        return db.query(Cliente).filter(and_(Cliente.estado == "activo", Cliente.sede_id == sede_id)).order_by(Cliente.nombre, Cliente.apellido).all()
 
     @staticmethod
     def get_by_id(db: Session, cliente_id: int) -> Optional[Cliente]:
@@ -200,9 +203,9 @@ class ClienteService:
         return etiquetas
 
     @staticmethod
-    def create(db: Session, cliente: ClienteCreate) -> Cliente:
+    def create(db: Session, cliente: ClienteCreate, sede_id: int) -> Cliente:
         """
-        Crear nuevo cliente
+        Crear nuevo cliente en una sede
         RN-CLI-001: Email único si se proporciona
         """
         # Validar email único si se proporciona
@@ -228,7 +231,7 @@ class ClienteService:
                 )
 
         # Crear cliente
-        db_cliente = Cliente(**cliente.model_dump())
+        db_cliente = Cliente(**cliente.model_dump(), sede_id=sede_id)
         db.add(db_cliente)
         db.flush()  # Para obtener el ID
         
@@ -340,16 +343,18 @@ class ClienteService:
         return db_cliente
 
     @staticmethod
-    def busqueda_rapida(db: Session, query: str, limite: int = 10) -> List[Cliente]:
-        """Búsqueda rápida para autocompletado"""
+    def busqueda_rapida(db: Session, sede_id: int, query: str, limite: int = 10) -> List[Cliente]:
+        """Búsqueda rápida para autocompletado en una sede"""
         search_term = f"%{query}%"
         return db.query(Cliente).filter(
             and_(
                 Cliente.estado == 'activo',
+                Cliente.sede_id == sede_id,
                 or_(
                     Cliente.nombre.ilike(search_term),
                     Cliente.apellido.ilike(search_term),
-                    Cliente.telefono.ilike(search_term)
+                    Cliente.telefono.ilike(search_term),
+                    Cliente.cedula.ilike(search_term)
                 )
             )
         ).order_by(Cliente.nombre).limit(limite).all()

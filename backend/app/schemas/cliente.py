@@ -64,11 +64,24 @@ class ClienteEtiquetaResponse(ClienteEtiquetaBase):
 class ClienteBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del cliente")
     apellido: Optional[str] = Field(None, max_length=100, description="Apellido del cliente")
+    cedula: Optional[str] = Field(None, max_length=20, description="Cédula/Documento de identidad")
     telefono: Optional[str] = Field(None, max_length=20, description="Teléfono del cliente")
     email: Optional[EmailStr] = Field(None, description="Email del cliente")
     fecha_nacimiento: Optional[date] = Field(None, description="Fecha de nacimiento")
     direccion: Optional[str] = Field(None, description="Dirección")
     notas: Optional[str] = Field(None, description="Notas adicionales")
+    
+    @field_validator('cedula')
+    @classmethod
+    def validar_cedula(cls, v):
+        if v is None:
+            return v
+        # Remover espacios y guiones
+        cedula_limpia = re.sub(r'[\s\-]', '', v)
+        # Validar que solo contenga números y tenga longitud adecuada (6-15 dígitos)
+        if not re.match(r'^\d{6,15}$', cedula_limpia):
+            raise ValueError('Formato de cédula inválido. Debe contener entre 6 y 15 dígitos.')
+        return cedula_limpia
     
     @field_validator('telefono')
     @classmethod
@@ -113,12 +126,23 @@ class ClienteUpdate(BaseModel):
     """Schema para actualizar un cliente existente - Todos los campos opcionales"""
     nombre: Optional[str] = Field(None, min_length=2, max_length=100)
     apellido: Optional[str] = Field(None, max_length=100)
+    cedula: Optional[str] = Field(None, max_length=20)
     telefono: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
     fecha_nacimiento: Optional[date] = None
     direccion: Optional[str] = None
     notas: Optional[str] = None
     estado: Optional[str] = Field(None, pattern='^(activo|inactivo)$')
+    
+    @field_validator('cedula')
+    @classmethod
+    def validar_cedula(cls, v):
+        if v is None:
+            return v
+        cedula_limpia = re.sub(r'[\s\-]', '', v)
+        if not re.match(r'^\d{6,15}$', cedula_limpia):
+            raise ValueError('Formato de cédula inválido')
+        return cedula_limpia
     
     @field_validator('telefono')
     @classmethod
@@ -177,6 +201,7 @@ class ClienteListResponse(BaseModel):
     id: int
     nombre: str
     apellido: Optional[str]
+    cedula: Optional[str]
     telefono: Optional[str]
     email: Optional[str]
     total_visitas: int
