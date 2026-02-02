@@ -120,11 +120,18 @@ export default function Sidebar() {
         if (user && user.rol) {
             const roleName = user.rol.nombre;
             const filtered = allMenuItems.filter(item => {
+                // Super Administrador has access to everything
+                if (roleName === 'Super Administrador') {
+                    // Special restriction: ONLY Super Admin (no sede_id) can see Sedes
+                    // This is already true for Super Admin (sede_id is null)
+                    return true;
+                }
+
                 // Check role permission
                 const hasRole = item.roles ? item.roles.includes(roleName) : true;
                 if (!hasRole) return false;
 
-                // Special restriction: ONLY Super Admin (no sede_id) can see Sedes
+                // Special restriction for other roles: ONLY Super Admin (no sede_id) can see Sedes
                 if (item.title === 'Sedes' && user.sede_id !== null) {
                     return false;
                 }
