@@ -38,6 +38,8 @@ export default function ReportesPage() {
         detalle_por_especialista: Array<{
             especialista_id: number;
             especialista_nombre: string;
+            total_servicios: number;
+            total_productos: number;
             total_comision: number;
             cantidad_items: number;
         }>;
