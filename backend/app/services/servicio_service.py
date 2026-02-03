@@ -47,7 +47,7 @@ class ServicioService:
             .first()
     
     @staticmethod
-    def create(db: Session, servicio: ServicioCreate) -> Servicio:
+    def create(db: Session, servicio: ServicioCreate, sede_id: int) -> Servicio:
         """
         BE-SER-003: Crear servicio
         Valida RN-SER-001 (duración mínima), RN-SER-002 (múltiplo 15), 
@@ -56,7 +56,8 @@ class ServicioService:
         # Verificar que la categoría existe si se proporciona
         if servicio.categoria_id:
             categoria = db.query(CategoriaServicio).filter(
-                CategoriaServicio.id == servicio.categoria_id
+                CategoriaServicio.id == servicio.categoria_id,
+                CategoriaServicio.sede_id == sede_id
             ).first()
             if not categoria:
                 raise HTTPException(
@@ -66,7 +67,7 @@ class ServicioService:
         
         db_servicio = Servicio(
             nombre=servicio.nombre,
-            sede_id=servicio.sede_id, # Asumiendo que el esquema tiene sede_id o se pasa por separado
+            sede_id=sede_id,
             descripcion=servicio.descripcion,
             duracion_minutos=servicio.duracion_minutos,
             precio_base=servicio.precio_base,

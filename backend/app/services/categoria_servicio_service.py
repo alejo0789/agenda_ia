@@ -14,11 +14,12 @@ class CategoriaServicioService:
     """
     
     @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 100) -> List[CategoriaServicio]:
+    def get_all(db: Session, sede_id: int, skip: int = 0, limit: int = 100) -> List[CategoriaServicio]:
         """
-        BE-CATSER-001: Listar todas las categorías ordenadas por orden_visualizacion
+        BE-CATSER-001: Listar todas las categorías de una sede ordenadas por orden_visualizacion
         """
         return db.query(CategoriaServicio)\
+            .filter(CategoriaServicio.sede_id == sede_id)\
             .order_by(CategoriaServicio.orden_visualizacion)\
             .offset(skip)\
             .limit(limit)\
@@ -32,30 +33,32 @@ class CategoriaServicioService:
         return db.query(CategoriaServicio).filter(CategoriaServicio.id == categoria_id).first()
     
     @staticmethod
-    def get_by_nombre(db: Session, nombre: str) -> Optional[CategoriaServicio]:
+    def get_by_nombre(db: Session, nombre: str, sede_id: int) -> Optional[CategoriaServicio]:
         """
-        Obtener categoría por nombre (para validar unicidad)
+        Obtener categoría por nombre en una sede (para validar unicidad)
         """
         return db.query(CategoriaServicio).filter(
-            func.lower(CategoriaServicio.nombre) == func.lower(nombre)
+            func.lower(CategoriaServicio.nombre) == func.lower(nombre),
+            CategoriaServicio.sede_id == sede_id
         ).first()
     
     @staticmethod
-    def create(db: Session, categoria: CategoriaServicioCreate) -> CategoriaServicio:
+    def create(db: Session, categoria: CategoriaServicioCreate, sede_id: int) -> CategoriaServicio:
         """
         BE-CATSER-003: Crear categoría
         """
-        # Verificar nombre único
-        existing = CategoriaServicioService.get_by_nombre(db, categoria.nombre)
+        # Verificar nombre único en la sede
+        existing = CategoriaServicioService.get_by_nombre(db, categoria.nombre, sede_id)
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Ya existe una categoría con el nombre '{categoria.nombre}'"
             )
         
-        # Si no se especifica orden, asignar el siguiente
+        # Si no se especifica orden, asignar el siguiente dentro de la sede
         if categoria.orden_visualizacion is None or categoria.orden_visualizacion == 0:
-            max_orden = db.query(func.max(CategoriaServicio.orden_visualizacion)).scalar() or 0
+            max_orden = db.query(func.max(CategoriaServicio.orden_visualizacion))\
+                .filter(CategoriaServicio.sede_id == sede_id).scalar() or 0
             orden = max_orden + 1
         else:
             orden = categoria.orden_visualizacion
@@ -63,7 +66,8 @@ class CategoriaServicioService:
         db_categoria = CategoriaServicio(
             nombre=categoria.nombre,
             descripcion=categoria.descripcion,
-            orden_visualizacion=orden
+            orden_visualizacion=orden,
+            sede_id=sede_id
         )
         
         db.add(db_categoria)
@@ -85,7 +89,7 @@ class CategoriaServicioService:
         
         # Verificar nombre único si se está actualizando
         if categoria.nombre and categoria.nombre.lower() != db_categoria.nombre.lower():
-            existing = CategoriaServicioService.get_by_nombre(db, categoria.nombre)
+            existing = CategoriaServicioService.get_by_nombre(db, categoria.nombre, db_categoria.sede_id)
             if existing:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -130,14 +134,14 @@ class CategoriaServicioService:
         db.commit()
     
     @staticmethod
-    def reordenar(db: Session, categorias: List[CategoriaOrdenItem]) -> List[CategoriaServicio]:
+    def reordenar(db: Session, sede_id: int, categorias: List[CategoriaOrdenItem]) -> List[CategoriaServicio]:
         """
         BE-CATSER-006: Reordenar categorías
         """
         for item in categorias:
             db_categoria = CategoriaServicioService.get_by_id(db, item.id)
-            if db_categoria:
+            if db_categoria and db_categoria.sede_id == sede_id:
                 db_categoria.orden_visualizacion = item.orden_visualizacion
         
         db.commit()
-        return CategoriaServicioService.get_all(db)
+        return CategoriaServicioService.get_all(db, sede_id)

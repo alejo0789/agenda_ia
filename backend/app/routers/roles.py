@@ -22,7 +22,13 @@ def list_roles(
     _: dict = Depends(require_permission("config.ver"))
 ):
     # Retrieve all global roles
-    global_roles = db.query(Rol).filter(Rol.sede_id == None).all()
+    global_roles_query = db.query(Rol).filter(Rol.sede_id == None)
+    
+    # Hide "Super Administrador" role from non-super admins
+    if current_user.rol_id != 1:
+        global_roles_query = global_roles_query.filter(Rol.nombre != "Super Administrador")
+        
+    global_roles = global_roles_query.all()
     
     # Retrieve local roles if applicable
     local_roles = []
@@ -160,6 +166,9 @@ def update_role(
         
         # If it is Global Role, we must localize it first
         if db_rol.sede_id is None:
+             # Security check: Non-super admins cannot localize/edit the Super Administrador role
+             if db_rol.nombre == "Super Administrador":
+                 raise HTTPException(status_code=403, detail="No tiene permisos para modificar el rol de Super Administrador")
              # Create/Get Local Shadow
              db_rol = ensure_local_role(db, db_rol, current_user.sede_id)
         
@@ -223,6 +232,9 @@ def assign_permissions(
             raise HTTPException(status_code=403, detail="Cannot modify permissions of another sede")
         
         if db_rol.sede_id is None:
+            # Security check: Non-super admins cannot localize/edit the Super Administrador role
+            if db_rol.nombre == "Super Administrador":
+                raise HTTPException(status_code=403, detail="No tiene permisos para modificar permisos del rol de Super Administrador")
             # COPY ON WRITE
             db_rol = ensure_local_role(db, db_rol, current_user.sede_id)
             # db_rol is now the local copy

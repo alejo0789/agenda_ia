@@ -27,13 +27,13 @@ def listar_categorias(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("servicios.ver"))
+    auth_context: dict = Depends(require_permission("servicios.ver"))
 ):
     """
     BE-CATSER-001: Listar categorías de servicio
     Permiso: servicios.ver
     """
-    return CategoriaServicioService.get_all(db, skip, limit)
+    return CategoriaServicioService.get_all(db, auth_context["user"].sede_id, skip, limit)
 
 
 @categorias_router.get("/{id}", response_model=CategoriaServicioResponse)
@@ -59,13 +59,13 @@ def obtener_categoria(
 def crear_categoria(
     categoria: CategoriaServicioCreate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("servicios.crear"))
+    auth_context: dict = Depends(require_permission("servicios.crear"))
 ):
     """
     BE-CATSER-003: Crear categoría
     Permiso: servicios.crear
     """
-    return CategoriaServicioService.create(db, categoria)
+    return CategoriaServicioService.create(db, categoria, auth_context["user"].sede_id)
 
 
 @categorias_router.put("/{id}", response_model=CategoriaServicioResponse)
@@ -102,13 +102,13 @@ def eliminar_categoria(
 def reordenar_categorias(
     orden: CategoriaOrdenUpdate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("servicios.editar"))
+    auth_context: dict = Depends(require_permission("servicios.editar"))
 ):
     """
     BE-CATSER-006: Reordenar categorías
     Permiso: servicios.editar
     """
-    return CategoriaServicioService.reordenar(db, orden.categorias)
+    return CategoriaServicioService.reordenar(db, auth_context["user"].sede_id, orden.categorias)
 
 
 # ============================================
@@ -179,7 +179,7 @@ def obtener_servicio(
 def crear_servicio(
     servicio: ServicioCreate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("servicios.crear"))
+    auth_context: dict = Depends(require_permission("servicios.crear"))
 ):
     """
     BE-SER-003: Crear servicio
@@ -191,7 +191,7 @@ def crear_servicio(
     - RN-SER-003: Precio >= 0
     - RN-SER-004: Color HEX válido (#RRGGBB)
     """
-    return ServicioService.create(db, servicio)
+    return ServicioService.create(db, servicio, auth_context["user"].sede_id)
 
 
 @servicios_router.put("/{id}", response_model=ServicioResponse)
