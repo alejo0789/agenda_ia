@@ -33,6 +33,7 @@ export default function ServiciosPage() {
         servicios,
         categorias,
         isLoading,
+        isServiciosLoading,
         error,
         fetchServicios,
         fetchCategorias,
@@ -130,7 +131,7 @@ export default function ServiciosPage() {
         return categoria?.nombre || 'Sin categoría';
     };
 
-    if (isLoading && servicios.length === 0) {
+    if (isServiciosLoading && servicios.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-purple-600" />

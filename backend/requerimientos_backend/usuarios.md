@@ -1325,4 +1325,4 @@ Mensajes de error: Asociados a campos con aria-describedby
 Screen reader: Anuncios de cambios de estado con aria-live
 11.3 Responsive DesignBreakpointComportamientoMobile (< 640px)Cards en lugar de tablas, menú hamburguesa, modales fullscreenTablet (640px - 1024px)Tabla simplificada, sidebar colapsableDesktop (> 1024px)Vista completa con sidebar, tablas expandidas11.4 Performance
 Debounce en búsqueda: 300ms antes de ejecutar
-Paginación: Má
+Paginación: 

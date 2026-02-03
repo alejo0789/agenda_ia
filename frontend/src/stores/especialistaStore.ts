@@ -17,6 +17,7 @@ interface EspecialistaState {
     especialistas: Especialista[];
     selectedEspecialista: Especialista | null;
     isLoading: boolean;
+    isEspecialistasLoading: boolean;
     error: string | null;
     filters: EspecialistaFilters;
 
@@ -62,6 +63,7 @@ export const useEspecialistaStore = create<EspecialistaState>((set, get) => ({
     especialistas: [],
     selectedEspecialista: null,
     isLoading: false,
+    isEspecialistasLoading: false,
     error: null,
     filters: {},
     horarios: [],
@@ -73,13 +75,14 @@ export const useEspecialistaStore = create<EspecialistaState>((set, get) => ({
     // ============================================
 
     fetchEspecialistas: async (params) => {
-        set({ isLoading: true, error: null });
+        set({ isEspecialistasLoading: true, isLoading: true, error: null });
         try {
             const especialistas = await especialistasApi.getAll(params);
-            set({ especialistas, isLoading: false });
+            set({ especialistas, isEspecialistasLoading: false, isLoading: false });
         } catch (error: any) {
             set({
                 error: error.response?.data?.detail || 'Error al cargar especialistas',
+                isEspecialistasLoading: false,
                 isLoading: false,
             });
         }

@@ -15,6 +15,8 @@ interface ServicioState {
     selectedServicio: Servicio | null;
     selectedCategoria: Categoria | null;
     isLoading: boolean;
+    isServiciosLoading: boolean;
+    isCategoriasLoading: boolean;
     error: string | null;
     filters: ServicioFilters;
 
@@ -57,6 +59,8 @@ export const useServicioStore = create<ServicioState>((set, get) => ({
     selectedServicio: null,
     selectedCategoria: null,
     isLoading: false,
+    isServiciosLoading: false,
+    isCategoriasLoading: false,
     error: null,
     filters: defaultFilters,
 
@@ -65,13 +69,14 @@ export const useServicioStore = create<ServicioState>((set, get) => ({
     // ============================================
 
     fetchCategorias: async () => {
-        set({ isLoading: true, error: null });
+        set({ isCategoriasLoading: true, isLoading: true, error: null });
         try {
             const categorias = await categoriasApi.getAll();
-            set({ categorias, isLoading: false });
+            set({ categorias, isCategoriasLoading: false, isLoading: false });
         } catch (error: any) {
             set({
                 error: error.response?.data?.detail || 'Error al cargar categorías',
+                isCategoriasLoading: false,
                 isLoading: false,
             });
         }
@@ -144,14 +149,15 @@ export const useServicioStore = create<ServicioState>((set, get) => ({
     // ============================================
 
     fetchServicios: async (params) => {
-        set({ isLoading: true, error: null });
+        set({ isServiciosLoading: true, isLoading: true, error: null });
         try {
             const finalParams = { ...get().filters, ...params };
             const servicios = await serviciosApi.getAll(finalParams);
-            set({ servicios, isLoading: false });
+            set({ servicios, isServiciosLoading: false, isLoading: false });
         } catch (error: any) {
             set({
                 error: error.response?.data?.detail || 'Error al cargar servicios',
+                isServiciosLoading: false,
                 isLoading: false,
             });
         }

@@ -35,7 +35,7 @@ export default function EspecialistaTable({
     onManageServicios,
 }: EspecialistaTableProps) {
     const router = useRouter();
-    const { especialistas, isLoading, error, fetchEspecialistas, deleteEspecialista } =
+    const { especialistas, isLoading, isEspecialistasLoading, error, fetchEspecialistas, deleteEspecialista } =
         useEspecialistaStore();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -106,7 +106,7 @@ export default function EspecialistaTable({
         }
     };
 
-    if (isLoading && especialistas.length === 0) {
+    if (isEspecialistasLoading && especialistas.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center space-y-4">

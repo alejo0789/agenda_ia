@@ -69,7 +69,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex="https://.*\.railway\.app", # Permitir dominios de Railway
+    allow_origin_regex=r"https://.*\.railway\.app", # Permitir dominios de Railway
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
