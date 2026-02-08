@@ -66,6 +66,8 @@ origins = [
     "http://192.168.1.171:3000",
     "http://192.168.1.171:3001",
     "http://192.168.1.8:3000",
+    "https://siagenda.com",
+    "https://www.siagenda.com",
 ]
 
 app.add_middleware(
