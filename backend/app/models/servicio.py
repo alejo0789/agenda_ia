@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, DECIMAL, CheckConstraint
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, DECIMAL, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
@@ -8,7 +8,7 @@ class CategoriaServicio(Base):
     __tablename__ = "categorias_servicio"
 
     id = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String(100), nullable=False, unique=True)
+    nombre = Column(String(100), nullable=False)
     sede_id = Column(Integer, ForeignKey("sedes.id"), index=True)
     descripcion = Column(String)
     orden_visualizacion = Column(Integer, default=0)
@@ -16,6 +16,10 @@ class CategoriaServicio(Base):
 
     # Relationships
     servicios = relationship("Servicio", back_populates="categoria")
+
+    __table_args__ = (
+        UniqueConstraint('nombre', 'sede_id', name='uq_categoria_nombre_sede'),
+    )
 
 
 class Servicio(Base):

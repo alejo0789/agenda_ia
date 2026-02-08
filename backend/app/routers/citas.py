@@ -1,13 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 
 from ..database import get_db
 from ..schemas.cita import (
-    CitaCreate, CitaUpdate, CitaResponse, CitaListResponse, CitaCambiarEstado
+    CitaCreate, CitaUpdate, CitaResponse, CitaListResponse, CitaCambiarEstado,
+    CitaAgenteRequest
 )
+from ..schemas.cliente import ClienteCreate
+from ..models.cliente import Cliente
+from ..models.sede import Sede
+from ..models.servicio import Servicio
+from ..models.especialista import Especialista, EspecialistaServicio
 from ..services.cita_service import CitaService
+from ..services.cliente_service import ClienteService
 from ..dependencies import require_permission
 
 router = APIRouter(
@@ -27,7 +35,7 @@ def listar_citas(
     especialista_id: Optional[int] = Query(None, description="Filtrar por especialista"),
     estado: Optional[str] = Query(None, description="Filtrar por estado"),
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("agenda.ver"))
+    auth_context: dict = Depends(require_permission("agenda.ver"))
 ):
     """
     Listar citas por rango de fechas
@@ -39,7 +47,7 @@ def listar_citas(
         fecha_fin=fecha_fin,
         especialista_id=especialista_id,
         estado=estado,
-        sede_id=user["user"].sede_id
+        sede_id=auth_context["user"].sede_id
     )
     return [CitaService.format_cita_list(c) for c in citas]
 
@@ -183,9 +191,112 @@ def eliminar_cita(
         )
 
 
+
 # ============================================
 # ENDPOINTS ADICIONALES
 # ============================================
+
+@router.post("/agendar-externo", response_model=CitaResponse, status_code=status.HTTP_201_CREATED)
+def agendar_cita_externo(
+    request: CitaAgenteRequest,
+    db: Session = Depends(get_db),
+    auth_context: dict = Depends(require_permission("agenda.crear"))
+):
+    """
+    Crear cita desde agente externo (n8n/whatsapp)
+    - Busca o crea cliente por cédula
+    - Busca servicio y sede por nombre
+    - Asigna especialista por defecto si es necesario
+    - Registra abono si aplica
+    """
+    # 1. Validar Sede
+    sede = db.query(Sede).filter(Sede.nombre.ilike(f"%{request.cita.sede}%"), Sede.estado == 'activa').first()
+    if not sede:
+        # Si no la encuentra por nombre, intentamos buscar una marcada como principal
+        sede = db.query(Sede).filter(Sede.es_principal == True).first()
+        if not sede:
+            raise HTTPException(status_code=400, detail=f"Sede '{request.cita.sede}' no encontrada")
+
+    # 2. Validar o buscar Servicio (alisado, repolarizacion, garantia)
+    nombre_servicio = request.cita.servicio
+    servicio = db.query(Servicio).filter(Servicio.nombre.ilike(f"%{nombre_servicio}%"), Servicio.sede_id == sede.id).first()
+    
+    if not servicio:
+        # Si no existe, lo buscamos en cualquier sede para ver si podemos "copiar" o usar uno genérico
+        # Pero según el requerimiento, deberían existir estos 3.
+        # Por ahora fallamos si no existe, el admin debería crearlos primero.
+        raise HTTPException(status_code=400, detail=f"Servicio '{nombre_servicio}' no encontrado en la sede {sede.nombre}")
+
+    # 3. Buscar o Crear Cliente
+    # Nombre, Cédula y Teléfono son obligatorios según el requerimiento
+    if not request.cliente.nombre or not request.cliente.cedula or not request.cliente.telefono:
+        raise HTTPException(status_code=400, detail="Nombre, Cédula y Teléfono del cliente son obligatorios")
+
+    cliente_existente = db.query(Cliente).filter(
+        or_(
+            Cliente.cedula == request.cliente.cedula,
+            Cliente.telefono == request.cliente.telefono
+        )
+    ).first()
+    
+    if not cliente_existente:
+        nuevo_cliente_data = ClienteCreate(
+            nombre=request.cliente.nombre,
+            apellido=request.cliente.apellido,
+            cedula=request.cliente.cedula,
+            telefono=request.cliente.telefono,
+            email=request.cliente.email
+        )
+        cliente_existente = ClienteService.create(db, nuevo_cliente_data, sede.id)
+    
+    # 4. Asignar Especialista
+    especialista_id = request.cita.especialista_id
+    if not especialista_id:
+        # Buscar el primer especialista activo disponible en esa sede para ese servicio
+        especialista = db.query(Especialista).join(Especialista.servicios).filter(
+            Especialista.sede_id == sede.id,
+            Especialista.estado == 'activo',
+            EspecialistaServicio.servicio_id == servicio.id
+        ).first()
+        
+        if not especialista:
+            # Si no hay uno específico para el servicio, buscar cualquiera en la sede
+            especialista = db.query(Especialista).filter(Especialista.sede_id == sede.id, Especialista.estado == 'activo').first()
+            
+        if not especialista:
+            raise HTTPException(status_code=400, detail="No hay especialistas disponibles en esta sede")
+        especialista_id = especialista.id
+
+    # 5. Crear Cita
+    try:
+        cita_create = CitaCreate(
+            cliente_id=cliente_existente.id,
+            especialista_id=especialista_id,
+            servicio_id=servicio.id,
+            fecha=request.cita.fecha,
+            hora_inicio=request.cita.hora_inicio,
+            notas=request.cita.notas,
+            # Abono
+            monto_abono=request.abono.monto if request.abono else None,
+            metodo_pago_id=request.abono.metodo_pago_id if request.abono else None,
+            referencia_pago=request.abono.referencia if request.abono else None,
+            concepto_abono=request.abono.concepto if request.abono else None
+        )
+    
+        current_user = auth_context["user"]
+        # Usamos la sede detectada por el bot en lugar de la del usuario que ejecuta si es diferente
+        cita = CitaService.crear(db, cita_create, current_user.id, sede.id)
+        
+        # Devolver respuesta completa
+        return obtener_cita(cita.id, db, auth_context)
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
 
 @router.get("/cliente/{cliente_id}", response_model=List[CitaListResponse])
 def listar_citas_cliente(

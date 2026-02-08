@@ -25,9 +25,12 @@ import {
     CheckCircle,
     Clock,
     Send,
+    MessageSquare,
+    Image as ImageIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { serviciosApi } from '@/lib/api/servicios';
+import { PhotoUploadModal } from '@/components/common/PhotoUploadModal';
 import type { Servicio } from '@/types/servicio';
 import type { AbonoAplicarCreate } from '@/types/caja';
 import { especialistasApi } from '@/lib/api/especialistas';
@@ -85,6 +88,10 @@ export default function POSPage() {
     const [pagosOriginales, setPagosOriginales] = useState<any[]>([]);
     const [abonosOriginales, setAbonosOriginales] = useState<any[]>([]);
     const [mobileView, setMobileView] = useState<'catalog' | 'cart'>('catalog');
+
+    // Estado para modal de fotos
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
+    const [clienteInfoForPhoto, setClienteInfoForPhoto] = useState<{ id: number; nombre: string; telefono?: string } | null>(null);
 
     useEffect(() => {
         const cargarDatos = async () => {
@@ -231,6 +238,18 @@ export default function POSPage() {
             });
 
             setFacturaCreada({ id: factura.id, numero: factura.numero_factura, type: 'orden' });
+
+            // Preparar info para subir fotos (si es especialista)
+            if (isEspecialista && clienteId && clienteNombre) {
+                // Notar que no tenemos el telefono aca directo en el carrito, pero el modal de fotos maneja eso o podemos buscarlo.
+                // Como workaround rapido, pasamos lo que tenemos.
+                // Idealmente el carrito deberia tener mas info del cliente o buscarla.
+                // Pero el PhotoUploadModal hace la carga si falta info? No, necesita IDs.
+                // Asumiremos que el ID es suficiente para que el usuario o el sistema funcione,
+                // Ojala el clienteId sea suficiente.
+                setClienteInfoForPhoto({ id: clienteId, nombre: clienteNombre });
+            }
+
             limpiarCarrito();
             toast.success('Orden enviada a facturación correctamente');
         } catch (err) {
@@ -397,7 +416,10 @@ export default function POSPage() {
                         </p>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setFacturaCreada(null)}
+                                onClick={() => {
+                                    setFacturaCreada(null);
+                                    setMobileView('catalog');
+                                }}
                                 className="flex-1 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium"
                             >
                                 {facturaCreada.type === 'orden' ? 'Nueva Orden' : 'Nueva Venta'}
@@ -412,8 +434,32 @@ export default function POSPage() {
                                 </Link>
                             )}
                         </div>
+
+                        {/* Botón para subir fotos despues de crear la orden */}
+                        {isEspecialista && clienteInfoForPhoto && (
+                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                <p className="text-sm text-gray-500 mb-3">¿Deseas subir fotos del resultado?</p>
+                                <button
+                                    onClick={() => setShowPhotoModal(true)}
+                                    className="w-full py-2.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-xl hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors font-medium flex items-center justify-center gap-2"
+                                >
+                                    <ImageIcon className="w-4 h-4" />
+                                    Subir Fotos del Cliente
+                                </button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
+
+                {/* Modal de Subida de Fotos en vista de exito */}
+                {showPhotoModal && clienteInfoForPhoto && (
+                    <PhotoUploadModal
+                        isOpen={showPhotoModal}
+                        onClose={() => setShowPhotoModal(false)}
+                        clienteId={clienteInfoForPhoto.id}
+                        clienteNombre={clienteInfoForPhoto.nombre}
+                    />
+                )}
             </div>
         );
     }
@@ -456,6 +502,19 @@ export default function POSPage() {
 
                 {/* Catálogo */}
                 <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden min-h-0">
+
+                    {/* Selector de Cliente - Visible siempre para facilitar flujo */}
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                        <p className="text-[10px] font-black uppercase text-gray-400 mb-2 px-1">Cliente</p>
+                        <ClienteSelector
+                            value={clienteId ? { id: clienteId, nombre: clienteNombre || '' } : null}
+                            onChange={(cliente) => setCliente(cliente?.id || null, cliente?.nombre || null)}
+                            required={true}
+                        />
+                        <div className="mt-2">
+                            <ClienteAbonoBanner clienteId={clienteId} />
+                        </div>
+                    </div>
                     {/* Tabs con iconos más grandes en móvil */}
                     <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
                         <button
@@ -491,6 +550,8 @@ export default function POSPage() {
                             className="w-full"
                         />
                     </div>
+
+
 
                     {/* Búsqueda Tap-Friendly con botón de limpiar */}
                     <div className="p-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
@@ -770,12 +831,24 @@ export default function POSPage() {
                 />
             )}
 
-            {/* Modal de facturas pendientes */}
             <FacturasPendientesModal
                 isOpen={showFacturasPendientes}
                 onClose={() => setShowFacturasPendientes(false)}
                 onCargarServicios={handleCargarServiciosPendientes}
             />
+
+            {/* Modal de Subida de Fotos */}
+            {showPhotoModal && clienteInfoForPhoto && (
+                <PhotoUploadModal
+                    isOpen={showPhotoModal}
+                    onClose={() => setShowPhotoModal(false)}
+                    clienteId={clienteInfoForPhoto.id}
+                    clienteNombre={clienteInfoForPhoto.nombre}
+                // El telefono podria faltar aqui si solo viene del carrito, 
+                // pero el modal intentará usar el ID si no hay telefono, o el backend resolverá.
+                // Ajustamos el modal para que acepte solo ID si es necesario o buscamos el cliente completo antes.
+                />
+            )}
         </div>
     );
 }

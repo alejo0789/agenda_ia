@@ -46,19 +46,25 @@ def read_sedes(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    # Solo el Super Administrador (rol_id 1 y sin sede_id) puede ver la lista de sedes
-    if current_user.rol_id != 1 or current_user.sede_id is not None:
+    # Logic for Sede listing
+    if current_user.rol_id == 1 and current_user.sede_id is None:
+        # Super Admin sees all
+        query = db.query(models.Sede)
+        if estado:
+            query = query.filter(models.Sede.estado == estado)
+        sedes = query.offset(skip).limit(limit).all()
+        return sedes
+    elif current_user.sede_id is not None:
+         # Sede Admin or other user with sede assigned
+         # Return only their own sede
+         sede = db.query(models.Sede).filter(models.Sede.id == current_user.sede_id).first()
+         return [sede] if sede else []
+    else:
+        # No permissions
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Acceso denegado: Solo el Super Administrador puede gestionar sedes"
+            detail="Acceso denegado"
         )
-
-    query = db.query(models.Sede)
-    if estado:
-        query = query.filter(models.Sede.estado == estado)
-    
-    sedes = query.offset(skip).limit(limit).all()
-    return sedes
 
 @router.get("/{sede_id}", response_model=schemas.SedeResponse)
 def read_sede(

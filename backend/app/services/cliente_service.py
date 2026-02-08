@@ -170,6 +170,7 @@ class ClienteService:
             "id": cliente.id,
             "nombre": cliente.nombre,
             "apellido": cliente.apellido,
+            "cedula": cliente.cedula,
             "telefono": cliente.telefono,
             "email": cliente.email,
             "fecha_nacimiento": cliente.fecha_nacimiento,

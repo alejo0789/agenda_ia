@@ -100,8 +100,9 @@ class EspecialistaService:
                          counter += 1
                      
                      # Create User
-                     # Default password: "Especialista123!"
-                     hashed = PasswordService.hash_password("Especialista123!")
+                     # Use provided password or default "Especialista123!"
+                     raw_password = getattr(especialista, 'password', None) or "Especialista123!"
+                     hashed = PasswordService.hash_password(raw_password)
                      
                      new_user = Usuario(
                          nombre=f"{especialista.nombre} {especialista.apellido}",
@@ -124,6 +125,112 @@ class EspecialistaService:
                      db.commit()
 
         return db_especialista
+
+    @staticmethod
+    def upload_documentation(db: Session, especialista_id: int, file) -> str:
+        """
+        Subir documentación del especialista
+        """
+        import os
+        import shutil
+        from fastapi import UploadFile
+
+        db_especialista = EspecialistaService.get_by_id(db, especialista_id)
+        if not db_especialista:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Especialista no encontrado"
+            )
+        
+        # Create directory
+        base_path = "storage"
+        doc_path = os.path.join(base_path, "documentacion")
+        specialist_folder = f"{db_especialista.id}_{db_especialista.nombre.replace(' ', '_')}"
+        final_path = os.path.join(doc_path, specialist_folder)
+        
+        os.makedirs(final_path, exist_ok=True)
+        
+        # Save file
+        file_location = os.path.join(final_path, file.filename)
+        with open(file_location, "wb+") as file_object:
+            shutil.copyfileobj(file.file, file_object)
+            
+        # Update DB if not already set (or append? For now, just update last uploaded path or folder)
+        # We store the relative path to the folder or file
+        # Force forward slashes for consistent URL usage
+        relative_path = os.path.join("documentacion", specialist_folder, file.filename).replace("\\", "/")
+        db_especialista.documentacion = relative_path
+        db.commit()
+        db.refresh(db_especialista)
+        
+        return relative_path
+
+    @staticmethod
+    def list_documentation(db: Session, especialista_id: int) -> List[dict]:
+        """
+        Listar archivos de documentación del especialista
+        """
+        import os
+        
+        db_especialista = EspecialistaService.get_by_id(db, especialista_id)
+        if not db_especialista:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Especialista no encontrado"
+            )
+
+        base_path = "storage"
+        doc_path = os.path.join(base_path, "documentacion")
+        specialist_folder = f"{db_especialista.id}_{db_especialista.nombre.replace(' ', '_')}"
+        final_path = os.path.join(doc_path, specialist_folder)
+
+        files = []
+        if os.path.exists(final_path):
+            for filename in os.listdir(final_path):
+                file_path = os.path.join(final_path, filename)
+                if os.path.isfile(file_path):
+                    # Force forward slashes for API response
+                    rel_path = os.path.join("documentacion", specialist_folder, filename).replace("\\", "/")
+                    files.append({
+                        "filename": filename,
+                        "path": rel_path, # Relative path for frontend
+                        "size": os.path.getsize(file_path)
+                    })
+        return files
+
+    @staticmethod
+    def delete_documentation(db: Session, especialista_id: int, filename: str) -> bool:
+        """
+        Eliminar archivo de documentación
+        """
+        import os
+        
+        db_especialista = EspecialistaService.get_by_id(db, especialista_id)
+        if not db_especialista:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Especialista no encontrado"
+            )
+
+        base_path = "storage"
+        doc_path = os.path.join(base_path, "documentacion")
+        specialist_folder = f"{db_especialista.id}_{db_especialista.nombre.replace(' ', '_')}"
+        file_path = os.path.join(doc_path, specialist_folder, filename)
+
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            os.remove(file_path)
+            
+            # If deleted file was the one in 'documentacion' column, clear it?
+            # Or just update it to None if folder is empty?
+            # For simplicity, if we delete the file tracked in DB, maybe update DB? 
+            # But since we support multiple files now, the column is less relevant.
+            # Let's keep the column as "last uploaded" or just ignore it basically.
+            return True
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Archivo no encontrado"
+            )
 
     @staticmethod
     def update(db: Session, especialista_id: int, especialista: EspecialistaUpdate) -> Especialista:

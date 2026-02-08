@@ -14,6 +14,7 @@ class Especialista(Base):
     telefono = Column(String(20))
     email = Column(String(100), unique=True)
     foto = Column(String)
+    documentacion = Column(String, nullable=True) # Path to uploaded documentation folder or file
     estado = Column(String(20), default="activo")
     fecha_ingreso = Column(Date)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())

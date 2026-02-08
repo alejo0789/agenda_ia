@@ -153,7 +153,10 @@ export default function Sidebar() {
             {/* Mobile Toggle Button */}
             <button
                 onClick={() => setIsOpenMobile(true)}
-                className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-800"
+                className={cn(
+                    "lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-800",
+                    isOpenMobile && "hidden"
+                )}
             >
                 <ChevronRight className="w-5 h-5" />
             </button>
@@ -178,7 +181,10 @@ export default function Sidebar() {
                 {/* Close Button Mobile */}
                 <button
                     onClick={() => setIsOpenMobile(false)}
-                    className="lg:hidden absolute -right-12 top-4 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md text-gray-600 dark:text-gray-400"
+                    className={cn(
+                        "lg:hidden absolute -right-12 top-4 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md text-gray-600 dark:text-gray-400",
+                        !isOpenMobile && "hidden"
+                    )}
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>

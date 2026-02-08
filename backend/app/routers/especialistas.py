@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 
 from ..database import get_db
 from ..schemas.especialista import (
@@ -8,7 +8,8 @@ from ..schemas.especialista import (
     HorarioEspecialistaCreate, HorarioEspecialistaUpdate, HorarioEspecialistaResponse, HorariosBatchCreate,
     BloqueoEspecialistaCreate, BloqueoEspecialistaUpdate, BloqueoEspecialistaResponse,
     EspecialistaServicioCreate, EspecialistaServicioUpdate, EspecialistaServicioResponse,
-    DisponibilidadRequest, DisponibilidadGeneralRequest, DisponibilidadResponse
+    DisponibilidadRequest, DisponibilidadGeneralRequest, DisponibilidadResponse,
+    DisponibilidadNombreRequest, DisponibilidadNombreResponse
 )
 from ..services.especialista_service import EspecialistaService
 from ..services.horario_service import HorarioService
@@ -112,6 +113,49 @@ def desactivar_especialista(
     Permiso: especialistas.eliminar
     """
     EspecialistaService.delete(db, id)
+    return None
+
+
+@router.post("/{id}/documentacion", status_code=status.HTTP_201_CREATED)
+def subir_documentacion(
+    id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _: dict = Depends(require_permission("especialistas.editar"))
+):
+    """
+    Subir documentación para un especialista
+    Permiso: especialistas.editar
+    """
+    path = EspecialistaService.upload_documentation(db, id, file)
+    return {"filename": file.filename, "path": path}
+
+
+@router.get("/{id}/documentacion", response_model=List[dict])
+def listar_documentacion(
+    id: int,
+    db: Session = Depends(get_db),
+    _: dict = Depends(require_permission("especialistas.ver"))
+):
+    """
+    Listar documentación de un especialista
+    Permiso: especialistas.ver
+    """
+    return EspecialistaService.list_documentation(db, id)
+
+
+@router.delete("/{id}/documentacion/{filename}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_documentacion(
+    id: int,
+    filename: str,
+    db: Session = Depends(get_db),
+    _: dict = Depends(require_permission("especialistas.editar"))
+):
+    """
+    Eliminar archivo de documentación
+    Permiso: especialistas.editar
+    """
+    EspecialistaService.delete_documentation(db, id, filename)
     return None
 
 
@@ -341,4 +385,23 @@ def obtener_disponibilidad_general(
     
     return DisponibilidadService.get_disponibilidad_general(
         db, servicio_id, fecha_inicio_date, fecha_fin_date
+    )
+
+@router.post("/consultar-disponibilidad-nombre", response_model=DisponibilidadNombreResponse)
+def consultar_disponibilidad_nombre(
+    request: DisponibilidadNombreRequest,
+    db: Session = Depends(get_db),
+    auth_context: dict = Depends(require_permission("agenda.ver"))
+):
+    """
+    BE-DISP-003: Consultar disponibilidad de un especialista por nombre (para agente IA)
+    Permiso: agenda.ver
+    """
+    return DisponibilidadService.consultar_disponibilidad_por_nombre(
+        db=db,
+        sede_id=auth_context["user"].sede_id,
+        nombre_especialista=request.nombre_especialista,
+        servicio_id=request.servicio_id,
+        fecha=request.fecha,
+        hora_inicio=request.hora_inicio
     )

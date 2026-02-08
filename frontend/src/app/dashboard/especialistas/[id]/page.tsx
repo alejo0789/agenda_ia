@@ -51,7 +51,7 @@ export default function EspecialistaDetailPage() {
         activateEspecialista,
     } = useEspecialistaStore();
 
-    const [activeTab, setActiveTab] = useState<'resumen' | 'horarios' | 'bloqueos' | 'servicios'>('resumen');
+    const [activeTab, setActiveTab] = useState<'resumen' | 'horarios' | 'bloqueos' | 'servicios' | 'documentacion'>('resumen');
     const [showHorariosModal, setShowHorariosModal] = useState(false);
     const [showBloqueosModal, setShowBloqueosModal] = useState(false);
     const [showServiciosModal, setShowServiciosModal] = useState(false);
@@ -276,6 +276,7 @@ export default function EspecialistaDetailPage() {
                         { id: 'horarios', label: 'Horarios', icon: Clock },
                         { id: 'bloqueos', label: 'Bloqueos', icon: Ban },
                         { id: 'servicios', label: 'Servicios', icon: Scissors },
+                        { id: 'documentacion', label: 'Documentación', icon: FileText },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -514,6 +515,10 @@ export default function EspecialistaDetailPage() {
                         )}
                     </div>
                 )}
+
+                {activeTab === 'documentacion' && (
+                    <DocumentacionTab selectedEspecialista={selectedEspecialista} />
+                )}
             </div>
 
             {/* Modals */}
@@ -642,6 +647,126 @@ export default function EspecialistaDetailPage() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+// Custom component for Documentation Tab
+function DocumentacionTab({ selectedEspecialista }: { selectedEspecialista: any }) {
+    const { uploadDocumentation, fetchFiles, files, deleteFile } = useEspecialistaStore();
+    const [file, setFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    useEffect(() => {
+        if (selectedEspecialista?.id) {
+            fetchFiles(selectedEspecialista.id);
+        }
+    }, [selectedEspecialista?.id, fetchFiles]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleUpload = async () => {
+        if (!file || !selectedEspecialista?.id) return;
+        setIsUploading(true);
+        try {
+            await uploadDocumentation(selectedEspecialista.id, file);
+            setFile(null);
+            // Reset input value to allow re-uploading same file if needed (though state is null now)
+            const input = document.getElementById('doc-upload-input') as HTMLInputElement;
+            if (input) input.value = '';
+            alert('Documentación subida con éxito');
+        } catch (error) {
+            console.error('Error uploading:', error);
+            alert('Error al subir documentación');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleDelete = async (filename: string) => {
+        if (!confirm(`¿Estás seguro de eliminar el archivo ${filename}?`)) return;
+        try {
+            await deleteFile(selectedEspecialista.id, filename);
+        } catch (error) {
+            console.error('Error deleting:', error);
+            alert('Error al eliminar archivo');
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <h3 className="font-medium">Documentación del Especialista</h3>
+
+            {files && files.length > 0 ? (
+                <div className="space-y-3">
+                    {files.map((f, index) => (
+                        <div key={index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg flex items-center justify-between">
+                            <div className="flex items-center">
+                                <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg mr-3">
+                                    <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-gray-900 dark:text-gray-100">{f.name}</p>
+                                    <p className="text-xs text-gray-500">{(f.size / 1024).toFixed(1)} KB</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${f.url}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 px-3 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                >
+                                    Ver
+                                </a>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDelete(f.name)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-lg text-center border-2 border-dashed border-gray-200 dark:border-gray-700">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium">No hay documentación subida</p>
+                    <p className="text-gray-400 text-sm">Sube archivos PDF para este especialista</p>
+                </div>
+            )}
+
+            <div className="border-t pt-6 dark:border-gray-800">
+                <h4 className="text-sm font-medium mb-4">Subir Nuevo Documento</h4>
+                <div className="flex items-center gap-4">
+                    <input
+                        id="doc-upload-input"
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                        className="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-purple-50 file:text-purple-700
+                            hover:file:bg-purple-100"
+                    />
+                    <Button
+                        disabled={!file || isUploading}
+                        onClick={handleUpload}
+                        className="bg-purple-600 hover:bg-purple-700"
+                    >
+                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Subir'}
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }

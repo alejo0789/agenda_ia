@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles  # Importar StaticFiles
 from .routers import users, auth, roles, especialistas, servicios, clientes, citas, productos, inventario, sedes, dashboard
-from .routers import cajas, facturas, facturas_pendientes, ventas, comisiones, abonos, reportes, nomina
+from .routers import cajas, facturas, facturas_pendientes, ventas, comisiones, abonos, reportes, nomina, files  # Importar files
 from .database import engine, Base
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -45,6 +46,7 @@ app = FastAPI(
     - **Caja/POS**: Facturación, pagos mixtos, apertura/cierre de caja
     - **Ventas**: Reportes de ventas diarias y por período
     - **Comisiones**: Consulta de comisiones de especialistas
+    - **Archivos**: Subida y gestión de archivos (fotos clientes)
     """,
     version="1.0.0",
     swagger_ui_parameters={
@@ -75,6 +77,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Montar directorio de uploads como estático
+# Asegurarse que el directorio existe
+import os
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("storage", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/storage", StaticFiles(directory="storage"), name="storage")
+
+
 # Include routers
 app.include_router(auth.router)
 app.include_router(dashboard.router)
@@ -104,6 +115,7 @@ app.include_router(comisiones.router)
 app.include_router(abonos.router)
 app.include_router(reportes.router)
 app.include_router(nomina.router)
+app.include_router(files.router)  # Registrar router de archivos
 
 @app.get("/")
 def read_root():

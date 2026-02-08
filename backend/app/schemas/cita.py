@@ -149,3 +149,58 @@ class CitaFilters(BaseModel):
     especialista_id: Optional[int] = None
     cliente_id: Optional[int] = None
     estado: Optional[str] = None
+
+
+# ============================================
+# SCHEMAS PARA AGENTE EXTERNO (n8n)
+# ============================================
+
+class ClienteAgenteSchema(BaseModel):
+    nombre: str
+    apellido: Optional[str] = None
+    cedula: str
+    telefono: str
+    email: Optional[str] = None
+
+class CitaDatosSchema(BaseModel):
+    """
+    Servicios válidos para agendamiento externo:
+    - alisado
+    - repolarizacion  
+    - garantia
+    """
+    servicio: str = Field(..., description="Nombre del servicio: alisado, repolarizacion, garantia")
+    fecha: date
+    hora_inicio: time
+    sede: str = Field(..., description="Nombre de la sede")
+    especialista_id: Optional[int] = Field(None, description="ID del especialista (opcional, se asigna automáticamente)")
+    notas: Optional[str] = None
+    
+    @field_validator('servicio')
+    @classmethod
+    def validar_servicio(cls, v):
+        servicios_validos = ['alisado', 'repolarizacion', 'garantia']
+        v_normalizado = v.lower().strip()
+        # Mapear variantes comunes
+        if 'alisado' in v_normalizado or 'alizado' in v_normalizado:
+            return 'alisado'
+        if 'repolar' in v_normalizado or 'repola' in v_normalizado:
+            return 'repolarizacion'
+        if 'garantia' in v_normalizado or 'garantía' in v_normalizado:
+            return 'garantia'
+        if v_normalizado not in servicios_validos:
+            raise ValueError(f'Servicio no válido. Opciones: {", ".join(servicios_validos)}')
+        return v_normalizado
+
+class AbonoSchema(BaseModel):
+    monto: float
+    metodo_pago_id: int
+    referencia: Optional[str] = None
+    concepto: Optional[str] = None
+
+class CitaAgenteRequest(BaseModel):
+    """Schema para crear cita completa desde agente externo"""
+    cliente: ClienteAgenteSchema
+    cita: CitaDatosSchema
+    abono: Optional[AbonoSchema] = None
+

@@ -17,7 +17,8 @@ import {
     Check,
     AlertCircle,
     Loader2,
-    ChevronDown
+    ChevronDown,
+    Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ import { MetodoPago } from '@/types/caja';
 import { ClienteListItem, ClienteCreateDTO } from '@/types/cliente';
 import { Servicio, formatDuracion, formatPrecio } from '@/types/servicio';
 import { toast } from 'sonner';
+import { PhotoUploadModal } from '@/components/common/PhotoUploadModal';
 
 interface Especialista {
     id: number;
@@ -439,6 +441,9 @@ export function AppointmentModal({
         concepto: ''
     });
 
+    // Estado para modal de fotos
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
+
     // Cargar servicios al abrir el modal
     useEffect(() => {
         const loadServicios = async () => {
@@ -697,6 +702,23 @@ export function AppointmentModal({
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
+
+                {isEditMode && selectedCita && (
+                    <div className="bg-purple-50 dark:bg-purple-900/10 border-b border-purple-100 dark:border-purple-800/20 px-6 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                            <ImageIcon className="w-4 h-4" />
+                            <span className="text-sm font-medium">Fotos del servicio</span>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs border-purple-200 text-purple-700 hover:bg-purple-100 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-900/40"
+                            onClick={() => setShowPhotoModal(true)}
+                        >
+                            Subir Fotos
+                        </Button>
+                    </div>
+                )}
 
                 {/* Contenido */}
                 <div className="p-6 space-y-5">
@@ -1097,6 +1119,17 @@ export function AppointmentModal({
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Subida de Fotos */}
+            {showPhotoModal && (
+                <PhotoUploadModal
+                    isOpen={showPhotoModal}
+                    onClose={() => setShowPhotoModal(false)}
+                    clienteId={clienteSeleccionado?.id || selectedCita?.cliente_id}
+                    clienteTelefono={clienteSeleccionado?.telefono || selectedCita?.cliente?.telefono || undefined}
+                    clienteNombre={clienteSeleccionado?.nombre || selectedCita?.cliente?.nombre}
+                />
+            )}
         </div>
     );
 }

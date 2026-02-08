@@ -27,7 +27,9 @@ export default function AbrirCajaPage() {
         clearError();
         setLocalError('');
 
-        const monto = parseFloat(montoApertura.replace(/[^0-9.-]+/g, ''));
+        // Remover todo excepto números para obtener el valor real integer
+        const rawValue = montoApertura.replace(/[^0-9]/g, '');
+        const monto = parseInt(rawValue, 10);
 
         if (isNaN(monto) || monto < 0) {
             setLocalError('Por favor ingresa un monto válido');
@@ -46,7 +48,7 @@ export default function AbrirCajaPage() {
     };
 
     const formatInputMoney = (value: string) => {
-        // Remover caracteres no numéricos excepto punto
+        // Remover caracteres no numéricos
         const numericValue = value.replace(/[^0-9]/g, '');
         const number = parseInt(numericValue, 10);
 
@@ -134,7 +136,7 @@ export default function AbrirCajaPage() {
                                 Monto inicial de caja
                             </p>
                             <p className="text-3xl font-bold text-center text-emerald-600 dark:text-emerald-400">
-                                {montoApertura ? formatPrecio(parseFloat(montoApertura.replace(/[^0-9.-]+/g, ''))) : formatPrecio(0)}
+                                {montoApertura ? formatPrecio(parseInt(montoApertura.replace(/[^0-9]/g, ''), 10)) : formatPrecio(0)}
                             </p>
                         </div>
 

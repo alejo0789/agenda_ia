@@ -56,6 +56,29 @@ export const especialistasApi = {
         return response.data;
     },
 
+    // Subir documentación
+    uploadDocumentation: async (id: number, file: File): Promise<{ filename: string; path: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await apiClient.post(`/especialistas/${id}/documentacion`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    // Listar documentación
+    getDocumentation: async (id: number): Promise<{ filename: string; path: string; size: number }[]> => {
+        const response = await apiClient.get(`/especialistas/${id}/documentacion`);
+        return response.data;
+    },
+
+    // Eliminar documentación
+    deleteDocumentation: async (id: number, filename: string): Promise<void> => {
+        await apiClient.delete(`/especialistas/${id}/documentacion/${filename}`);
+    },
+
     // ============================================
     // HORARIOS
     // ============================================

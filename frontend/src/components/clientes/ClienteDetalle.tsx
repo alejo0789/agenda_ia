@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Cliente } from '@/types/cliente';
 import ClienteAvatar from './ClienteAvatar';
 import ClienteEstadoBadge from './ClienteEstadoBadge';
+import { filesApi, FileItem } from '@/lib/api/files';
 import {
     X,
     Edit,
@@ -15,6 +17,8 @@ import {
     Clock,
     Tag,
     AlertCircle,
+    Image as ImageIcon,
+    Loader2
 } from 'lucide-react';
 
 interface ClienteDetalleProps {
@@ -48,9 +52,37 @@ export default function ClienteDetalle({
     cliente,
     onEditar,
 }: ClienteDetalleProps) {
+    const [photos, setPhotos] = useState<FileItem[]>([]);
+    const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && cliente) {
+            loadPhotos();
+        } else {
+            setPhotos([]);
+        }
+    }, [isOpen, cliente]);
+
+    const loadPhotos = async () => {
+        if (!cliente) return;
+        setIsLoadingPhotos(true);
+        try {
+            const data = await filesApi.list(cliente.id);
+            // Filtrar solo imagenes si es necesario, aunque el modal de subida solo deja subir imagenes.
+            // Pero por seguridad filtramos extensiones si se quiere, o confiamos en el endpoint.
+            // El endpoint devuelve todo lo que haya en la carpeta.
+            setPhotos(data);
+        } catch (error) {
+            console.error("Error cargando fotos:", error);
+        } finally {
+            setIsLoadingPhotos(false);
+        }
+    };
+
     if (!isOpen || !cliente) return null;
 
     const nombreCompleto = `${cliente.nombre} ${cliente.apellido || ''}`.trim();
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -151,6 +183,49 @@ export default function ClienteDetalle({
                                 {formatShortDate(cliente.ultima_visita)}
                             </div>
                         </div>
+                    </div>
+
+                    {/* Galería de Fotos */}
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-4">
+                            <ImageIcon className="w-4 h-4" />
+                            Galería de Fotos
+                        </h3>
+
+                        {isLoadingPhotos ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                                <span className="ml-2 text-sm text-gray-500">Cargando fotos...</span>
+                            </div>
+                        ) : photos.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {photos.map((photo, index) => (
+                                    <a
+                                        key={index}
+                                        href={`${apiUrl}${photo.url}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group relative aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600"
+                                    >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={`${apiUrl}${photo.url}`}
+                                            alt={photo.name}
+                                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                            <div className="bg-white/90 rounded-full p-2">
+                                                <ImageIcon className="w-4 h-4 text-gray-900" />
+                                            </div>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-4 italic">
+                                No hay fotos disponibles
+                            </p>
+                        )}
                     </div>
 
                     {/* Información de contacto */}

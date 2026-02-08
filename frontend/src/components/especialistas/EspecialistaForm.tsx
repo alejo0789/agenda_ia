@@ -17,6 +17,8 @@ import {
     ArrowLeft,
     Save,
     AlertCircle,
+    Upload,
+    X,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -34,6 +36,10 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
         fetchEspecialista,
         createEspecialista,
         updateEspecialista,
+        uploadDocumentation,
+        fetchFiles,
+        files,
+        deleteFile,
         clearError,
         clearSelectedEspecialista,
     } = useEspecialistaStore();
@@ -44,24 +50,94 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
         documento_identidad: '',
         telefono: '',
         email: '',
+        password: '',
         fecha_ingreso: '',
     });
 
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isDirty, setIsDirty] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+
+            if (droppedFiles.length === 0) {
+                alert('Solo se permiten archivos PDF');
+                return;
+            }
+
+            if (droppedFiles.length < e.dataTransfer.files.length) {
+                alert('Solo se permiten archivos PDF. Algunos archivos fueron ignorados.');
+            }
+
+            if (mode === 'edit' && especialistaId) {
+                // Upload each file immediately
+                for (const f of droppedFiles) {
+                    try {
+                        await uploadDocumentation(especialistaId, f);
+                    } catch (error) {
+                        console.error("Error uploading file:", error);
+                    }
+                }
+            } else {
+                setPendingFiles(prev => [...prev, ...droppedFiles]);
+                setIsDirty(true);
+            }
+        }
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const selectedFiles = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
+
+            if (mode === 'edit' && especialistaId) {
+                for (const f of selectedFiles) {
+                    try {
+                        await uploadDocumentation(especialistaId, f);
+                    } catch (error) {
+                        console.error("Error uploading file:", error);
+                    }
+                }
+                // Clear input
+                e.target.value = '';
+            } else {
+                setPendingFiles(prev => [...prev, ...selectedFiles]);
+                setIsDirty(true);
+                // Clear input to allow re-selecting same file if removed
+                e.target.value = '';
+            }
+        }
+    };
+
+    const handleDrag = function (e: React.DragEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
 
     // Cargar datos si es modo editar
     useEffect(() => {
         if (mode === 'edit' && especialistaId) {
             fetchEspecialista(especialistaId);
+            fetchFiles(especialistaId);
         }
 
         return () => {
             clearSelectedEspecialista();
             clearError();
         };
-    }, [especialistaId, mode, fetchEspecialista, clearSelectedEspecialista, clearError]);
+    }, [especialistaId, mode, fetchEspecialista, fetchFiles, clearSelectedEspecialista, clearError]);
 
     // Prellenar formulario cuando se cargue el especialista
     useEffect(() => {
@@ -72,6 +148,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                 documento_identidad: selectedEspecialista.documento_identidad || '',
                 telefono: selectedEspecialista.telefono || '',
                 email: selectedEspecialista.email || '',
+                password: '', // Don't fill password on edit
                 fecha_ingreso: selectedEspecialista.fecha_ingreso
                     ? selectedEspecialista.fecha_ingreso.split('T')[0]
                     : '',
@@ -136,6 +213,12 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
             newErrors.email = 'El email no es válido';
         }
 
+        if (mode === 'create' && (!formData.password || formData.password.length < 6)) {
+            if (formData.email && (!formData.password || formData.password.length < 6)) {
+                newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+            }
+        }
+
         if (formData.telefono) {
             const phoneDigits = formData.telefono.replace(/\D/g, '');
             if (phoneDigits.length < 10) {
@@ -160,10 +243,20 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                 fecha_ingreso: formData.fecha_ingreso || undefined,
             };
 
+            let especialistaIdToUse = especialistaId;
+
             if (mode === 'create') {
-                await createEspecialista(dataToSubmit);
+                const newEspecialista = await createEspecialista(dataToSubmit);
+                especialistaIdToUse = newEspecialista.id;
             } else if (especialistaId) {
                 await updateEspecialista(especialistaId, dataToSubmit);
+            }
+
+            // Upload documentation if files selected
+            if (pendingFiles.length > 0 && especialistaIdToUse) {
+                for (const f of pendingFiles) {
+                    await uploadDocumentation(especialistaIdToUse, f);
+                }
             }
 
             router.push('/dashboard/especialistas');
@@ -341,6 +434,28 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                             )}
                         </div>
 
+                        {/* Password - Only in Create Mode */}
+                        {mode === 'create' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="password">
+                                    Contraseña (para usuario)
+                                </Label>
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder="******"
+                                    className={errors.password ? 'border-red-500' : ''}
+                                />
+                                {errors.password && (
+                                    <p className="text-xs text-red-500">{errors.password}</p>
+                                )}
+                                <p className="text-xs text-gray-500">Si se deja vacío, se usará 'Especialista123!'</p>
+                            </div>
+                        )}
+
                         {/* Fecha Ingreso */}
                         <div className="space-y-2">
                             <Label htmlFor="fecha_ingreso">
@@ -356,6 +471,144 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                                 max={new Date().toISOString().split('T')[0]}
                             />
                         </div>
+
+                        {/* Documentación Upload - Drag and Drop */}
+                        <div className="space-y-4 col-span-1 md:col-span-2">
+                            <Label htmlFor="documentacion">
+                                Documentación PDF
+                            </Label>
+
+                            <div
+                                className={`
+                                    border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-4 transition-colors cursor-pointer relative
+                                    ${dragActive
+                                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                        : 'border-gray-300 dark:border-gray-700 hover:border-purple-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                    }
+                                `}
+                                onDragEnter={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDragOver={handleDrag}
+                                onDrop={handleDrop}
+                                onClick={() => document.getElementById('documentacion-input')?.click()}
+                            >
+                                <input
+                                    id="documentacion-input"
+                                    name="documentacion"
+                                    type="file"
+                                    accept=".pdf"
+                                    multiple
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+
+                                <div className="text-center">
+                                    <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-2">
+                                        <Upload className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <p className="font-medium text-gray-900 dark:text-white">
+                                        {mode === 'edit' ? 'Arrastra nuevos documentos' : 'Arrastra documentos PDF aquí'}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        o haz click para buscar
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Lista de archivos pendientes (Create Mode) */}
+                            {mode === 'create' && pendingFiles.length > 0 && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Archivos seleccionados:</h4>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {pendingFiles.map((f, index) => (
+                                            <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                    <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded">
+                                                        <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                            {f.name}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {(f.size / 1024).toFixed(1)} KB
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== index))}
+                                                    className="p-1 hover:bg-red-100 text-red-500 rounded-full"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Lista de Archivos Existentes (Solo Edit Mode) */}
+                            {mode === 'edit' && files && files.length > 0 && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Documentos Cargados:</h4>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {files.map((f, index) => (
+                                            <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                    <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded">
+                                                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <a
+                                                            href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${f.url}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate"
+                                                        >
+                                                            {f.name}
+                                                        </a>
+                                                        <span className="text-xs text-gray-500">
+                                                            {(f.size / 1024).toFixed(1)} KB
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            if (confirm(`¿Eliminar ${f.name}?`)) {
+                                                                if (especialistaId) deleteFile(especialistaId, f.name);
+                                                            }
+                                                        }}
+                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {mode === 'edit' && selectedEspecialista?.documentacion && !files?.some(f => f.name === selectedEspecialista.documentacion) && (
+                                <div className="mt-2 text-sm text-blue-600 hover:underline">
+                                    <a
+                                        href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${selectedEspecialista.documentacion}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center"
+                                    >
+                                        <FileText className="w-4 h-4 mr-1" />
+                                        Ver Documentación Anterior (Legacy)
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+
                     </div>
                 </div>
 

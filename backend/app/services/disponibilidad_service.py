@@ -4,7 +4,10 @@ from datetime import date, time, datetime, timedelta
 from fastapi import HTTPException, status
 
 from ..models.especialista import Especialista, HorarioEspecialista, BloqueoEspecialista
-from ..schemas.especialista import SlotDisponible, DisponibilidadResponse
+from ..models.cita import Cita
+from ..models.servicio import Servicio
+from ..schemas.especialista import SlotDisponible, DisponibilidadResponse, DisponibilidadNombreResponse
+from sqlalchemy import or_, and_, func
 
 
 class DisponibilidadService:
@@ -92,6 +95,97 @@ class DisponibilidadService:
             disponibilidades.append(disponibilidad)
 
         return disponibilidades
+
+    @staticmethod
+    def consultar_disponibilidad_por_nombre(
+        db: Session,
+        sede_id: int,
+        nombre_especialista: str,
+        servicio_id: int,
+        fecha: date,
+        hora_inicio: time
+    ) -> DisponibilidadNombreResponse:
+        """
+        Consulta si un especialista por nombre está libre, ocupado o bloqueado
+        """
+        # 1. Buscar especialista
+        terma_busqueda = f"%{nombre_especialista}%"
+        especialista = db.query(Especialista).filter(
+            Especialista.sede_id == sede_id,
+            Especialista.estado == "activo",
+            or_(
+                Especialista.nombre.ilike(terma_busqueda),
+                Especialista.apellido.ilike(terma_busqueda),
+                func.concat(Especialista.nombre, " ", Especialista.apellido).ilike(terma_busqueda)
+            )
+        ).first()
+
+        if not especialista:
+             raise HTTPException(status_code=404, detail=f"Especialista '{nombre_especialista}' no encontrado")
+
+        # 2. Obtener duración del servicio para calcular hora_fin
+        servicio = db.query(Servicio).filter(Servicio.id == servicio_id).first()
+        if not servicio:
+            raise HTTPException(status_code=400, detail="Servicio no encontrado")
+        
+        duracion = servicio.duracion_minutos
+        dt_inicio = datetime.combine(fecha, hora_inicio)
+        dt_fin = dt_inicio + timedelta(minutes=duracion)
+        hora_fin = dt_fin.time()
+
+        # 3. Verificar Bloqueos (HARD STOP)
+        bloqueos = db.query(BloqueoEspecialista).filter(
+            BloqueoEspecialista.especialista_id == especialista.id
+        ).all()
+
+        esta_bloqueado = DisponibilidadService._esta_bloqueado(fecha, hora_inicio, hora_fin, bloqueos)
+        if esta_bloqueado:
+            return DisponibilidadNombreResponse(
+                especialista_id=especialista.id,
+                nombre_completo=f"{especialista.nombre} {especialista.apellido}",
+                estado="bloqueado",
+                mensaje=f"El especialista {especialista.nombre} tiene un bloqueo administrativo en ese horario y no puede atender."
+            )
+
+        # 4. Verificar Citas Existentes (SOFT STOP/WARNING)
+        citas_conflicto = db.query(Cita).filter(
+            Cita.especialista_id == especialista.id,
+            Cita.fecha == fecha,
+            Cita.estado.notin_(['cancelada', 'no_show']),
+            or_(
+                # La nueva cita empieza durante otra cita
+                and_(Cita.hora_inicio <= hora_inicio, Cita.hora_fin > hora_inicio),
+                # La nueva cita termina durante otra cita
+                and_(Cita.hora_inicio < hora_fin, Cita.hora_fin >= hora_fin),
+                # La nueva cita contiene otra cita
+                and_(Cita.hora_inicio >= hora_inicio, Cita.hora_fin <= hora_fin)
+            )
+        ).all()
+
+        if citas_conflicto:
+            conflictos = []
+            for c in citas_conflicto:
+                conflictos.append({
+                    "hora": f"{c.hora_inicio.strftime('%H:%M')} - {c.hora_fin.strftime('%H:%M')}",
+                    "cliente": f"{c.cliente.nombre} {c.cliente.apellido or ''}".strip(),
+                    "servicio": c.servicio.nombre
+                })
+            
+            return DisponibilidadNombreResponse(
+                especialista_id=especialista.id,
+                nombre_completo=f"{especialista.nombre} {especialista.apellido}",
+                estado="ocupado",
+                mensaje=f"El especialista {especialista.nombre} ya tiene otras citas en ese horario, pero el sistema permite sobre-agendar si el usuario lo desea.",
+                conflictos=conflictos
+            )
+
+        return DisponibilidadNombreResponse(
+            especialista_id=especialista.id,
+            nombre_completo=f"{especialista.nombre} {especialista.apellido}",
+            estado="disponible",
+            mensaje=f"El especialista {especialista.nombre} está totalmente disponible."
+        )
+
 
     @staticmethod
     def _generar_slots(

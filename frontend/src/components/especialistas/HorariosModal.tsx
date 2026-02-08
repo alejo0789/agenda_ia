@@ -44,7 +44,7 @@ const generateTimeOptions = () => {
 const TIME_OPTIONS = generateTimeOptions();
 
 // Horario por defecto
-const DEFAULT_HORA_INICIO = '08:00';
+const DEFAULT_HORA_INICIO = '07:00';
 const DEFAULT_HORA_FIN = '20:00';
 
 interface DiaHorario {

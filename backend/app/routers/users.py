@@ -53,7 +53,10 @@ def create_user(
             raise HTTPException(status_code=400, detail="Role belongs to a different Sede")
     elif current_user.rol_id != 1:
         # Non-super admin trying to assign a global role
-        raise HTTPException(status_code=403, detail="No tiene permisos para asignar roles globales")
+        # Allow if it's not "Super Administrador"
+        # We assume rol_id=1 is Super Admin, or check name
+        if rol_obj.nombre == "Super Administrador" or rol_obj.id == 1:
+             raise HTTPException(status_code=403, detail="No tiene permisos para asignar el rol de Super Administrador")
             
     # Si es crear, por defecto primer_acceso es True y requiere_cambio_password es configurable
     
@@ -190,7 +193,8 @@ def update_user(
              raise HTTPException(status_code=400, detail="Role belongs to a different Sede")
         elif new_rol.sede_id is None and current_user.rol_id != 1:
              # Non-super admin trying to assign a global role
-             raise HTTPException(status_code=403, detail="No tiene permisos para asignar roles globales")
+             if new_rol.nombre == "Super Administrador" or new_rol.id == 1:
+                  raise HTTPException(status_code=403, detail="No tiene permisos para asignar el rol de Super Administrador")
 
         # TODO: Validar que no se escale privilegios indebidamente
         db_user.rol_id = user_data.rol_id

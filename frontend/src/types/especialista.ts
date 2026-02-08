@@ -9,6 +9,7 @@ export interface Especialista {
     telefono?: string;
     email?: string;
     foto?: string;
+    documentacion?: string;
     estado: 'activo' | 'inactivo';
     fecha_ingreso?: string;
     fecha_creacion: string;
@@ -21,6 +22,7 @@ export interface EspecialistaFormData {
     documento_identidad?: string;
     telefono?: string;
     email?: string;
+    password?: string;
     foto?: string;
     fecha_ingreso?: string;
     estado?: 'activo' | 'inactivo';

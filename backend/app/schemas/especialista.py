@@ -17,10 +17,12 @@ class EspecialistaBase(BaseModel):
     foto: Optional[str] = None
     estado: Optional[str] = Field("activo", pattern="^(activo|inactivo)$")
     fecha_ingreso: Optional[date] = None
+    documentacion: Optional[str] = None
 
 
 class EspecialistaCreate(EspecialistaBase):
     crear_usuario: Optional[bool] = True
+    password: Optional[str] = None
 
 
 class EspecialistaUpdate(BaseModel):
@@ -201,3 +203,19 @@ class DisponibilidadGeneralRequest(BaseModel):
 class DisponibilidadResponse(BaseModel):
     especialista_id: int
     slots: List[SlotDisponible]
+
+
+class DisponibilidadNombreRequest(BaseModel):
+    nombre_especialista: str
+    servicio_id: int
+    fecha: date
+    hora_inicio: time
+
+
+class DisponibilidadNombreResponse(BaseModel):
+    especialista_id: int
+    nombre_completo: str
+    estado: str  # 'disponible', 'ocupado', 'bloqueado'
+    mensaje: str
+    conflictos: Optional[List[dict]] = None
+
