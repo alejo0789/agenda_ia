@@ -15,10 +15,9 @@ router = APIRouter(
     tags=["Archivos"]
 )
 
-# Directorio base para subidas. IMPORTANTE: Crear fuera de 'app' si se quiere persistencia segura, o configurar volumen.
-# Asumimos que la raiz del proyecto tiene una carpeta 'uploads'.
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+# Directorio base para subidas dentro del volumen persistente de Railway
+UPLOAD_DIR = Path("storage/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/upload")
 async def upload_file(

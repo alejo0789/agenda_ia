@@ -78,11 +78,11 @@ app.add_middleware(
 )
 
 # Montar directorio de uploads como estático
-# Asegurarse que el directorio existe
+# Asegurarse que el directorio existe dentro del volumen persistente
 import os
-os.makedirs("uploads", exist_ok=True)
-os.makedirs("storage", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+os.makedirs("storage/uploads", exist_ok=True)
+os.makedirs("storage/documentacion", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="storage/uploads"), name="uploads")
 app.mount("/storage", StaticFiles(directory="storage"), name="storage")
 
 

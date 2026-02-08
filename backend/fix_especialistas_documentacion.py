@@ -10,39 +10,55 @@ from sqlalchemy import text
 
 def migrate():
     with engine.connect() as conn:
+        print("Verificando tabla especialistas...")
+        
+        # Check if column exists in a way that doesn't break the transaction for Postgres
+        # We can check information_schema for Postgres/MySQL or pragma for SQLite
+        
+        column_exists = False
         try:
-            # Verificar si la columna existe
-            # Usando una consulta compatible con PostgreSQL y SQLite
-            print("Verificando tabla especialistas...")
-            
-            # Intentar obtener información de la columna
-            # En SQLite/Postgres esta es una forma segura de checkear
-            column_exists = False
-            try:
-                # Intenta hacer un SELECT simple de la columna para ver si falla
-                conn.execute(text("SELECT documentacion FROM especialistas LIMIT 1"))
-                column_exists = True
-            except Exception:
-                column_exists = False
+            # Consistent way to check if column exists without throwing an exception that breaks transactions
+            # Information schema is standard for Postgres
+            if "postgresql" in str(engine.url):
+                check_sql = """
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'especialistas' 
+                    AND column_name = 'documentacion'
+                """
+                query = conn.execute(text(check_sql))
+                column_exists = query.fetchone() is not None
+            else:
+                # Fallback for SQLite (local Dev)
+                query = conn.execute(text("PRAGMA table_info(especialistas)"))
+                rows = query.fetchall()
+                column_exists = any(row[1] == 'documentacion' for row in rows)
+        except Exception as e:
+            print(f"Error al verificar columna: {e}")
+            # If check fails for some reason, we'll try to add it anyway inside a safe block
 
-            if not column_exists:
-                print("Agregando columna 'documentacion' a la tabla especialistas...")
-                # SQL compatible
+        if not column_exists:
+            print("Agregando columna 'documentacion' a la tabla especialistas...")
+            try:
+                # Start a fresh transaction if possible or just execute
                 conn.execute(text("ALTER TABLE especialistas ADD COLUMN documentacion VARCHAR"))
-                # Note: conn.commit() is needed for context managers in some SQLAlchemy versions
-                # or if autocommit is not set.
+                # Using explicit commit for engines that require it
                 try:
                     conn.commit()
                 except:
                     pass
-                print("✓ Columna 'documentacion' agregada correctamente")
-            else:
-                print("✓ La columna 'documentacion' ya existe")
-                
-        except Exception as e:
-            print(f"❌ Error durante la migración: {e}")
-            import traceback
-            traceback.print_exc()
+                print("Column 'documentacion' added successfully")
+            except Exception as e:
+                # If it fails here, maybe it already existed or there's a real issue
+                if "already exists" in str(e).lower():
+                    print("Column already exists (verified via exception)")
+                else:
+                    print(f"Error adding column: {e}")
+        else:
+            print("Column 'documentacion' already exists")
 
 if __name__ == "__main__":
-    migrate()
+    try:
+        migrate()
+    except Exception as e:
+        print(f"Fatal error: {e}")
