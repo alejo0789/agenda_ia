@@ -24,19 +24,29 @@ export default function PrimerAccesoPage() {
     const [step, setStep] = useState<1 | 2>(1);
     const [isLoading, setIsLoading] = useState(false);
     const [verifiedUser, setVerifiedUser] = useState<string>('');
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
-        if (user) {
+        setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (isMounted && user) {
+            console.log('User detected in PrimerAcceso:', user);
             if (user.primer_acceso) {
-                setVerifiedUser(user.username);
+                setVerifiedUser(user.username || '');
                 setStep(2);
             } else {
                 router.push('/dashboard');
             }
         }
-    }, [user, router]);
+    }, [isMounted, user, router]);
 
     const { register, handleSubmit, formState: { errors }, watch, setError } = useForm<FirstAccessForm>();
+
+    if (!isMounted) {
+        return null; // O un spinner de carga
+    }
 
     const onSubmitUsername = async (data: FirstAccessForm) => {
         try {
@@ -90,10 +100,10 @@ export default function PrimerAccesoPage() {
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold text-center text-purple-600">
-                        Bienvenido al Club
+                        {step === 1 ? 'Configuración de Cuenta' : 'Bienvenido al Club'}
                     </CardTitle>
                     <CardDescription className="text-center">
-                        Configuración inicial de cuenta
+                        {step === 1 ? 'Por favor verifica tu usuario' : 'Define tu nueva contraseña'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
