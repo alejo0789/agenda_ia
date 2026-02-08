@@ -452,7 +452,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                                 {errors.password && (
                                     <p className="text-xs text-red-500">{errors.password}</p>
                                 )}
-                                <p className="text-xs text-gray-500">Si se deja vacío, se usará 'Especialista123!'</p>
+                                <p className="text-xs text-gray-500">Si se deja vacío, se usará &apos;Especialista123!&apos;</p>
                             </div>
                         )}
 

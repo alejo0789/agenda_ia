@@ -202,12 +202,10 @@ export default function ServicioModal({ isOpen, onClose, servicioId }: ServicioM
         setFormData((prev) => ({ ...prev, precio_base: numericValue }));
         setIsDirty(true);
 
-        if (errors.precio_base) {
-            setErrors(prev => {
-                const { precio_base: _removed, ...rest } = prev;
-                return rest;
-            });
-        }
+        setErrors(prev => {
+            const { precio_base, ...rest } = prev;
+            return rest;
+        });
     };
 
     const handleComisionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
