@@ -34,6 +34,7 @@ class EspecialistaUpdate(BaseModel):
     foto: Optional[str] = None
     estado: Optional[str] = Field(None, pattern="^(activo|inactivo)$")
     fecha_ingreso: Optional[date] = None
+    documentacion: Optional[str] = None
 
 
 class EspecialistaResponse(EspecialistaBase):

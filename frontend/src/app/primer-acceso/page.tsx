@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { usuariosApi } from '@/lib/api/usuarios';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,9 +20,21 @@ interface FirstAccessForm {
 
 export default function PrimerAccesoPage() {
     const router = useRouter();
+    const { user, clearAuth } = useAuthStore();
     const [step, setStep] = useState<1 | 2>(1);
     const [isLoading, setIsLoading] = useState(false);
     const [verifiedUser, setVerifiedUser] = useState<string>('');
+
+    useEffect(() => {
+        if (user) {
+            if (user.primer_acceso) {
+                setVerifiedUser(user.username);
+                setStep(2);
+            } else {
+                router.push('/dashboard');
+            }
+        }
+    }, [user, router]);
 
     const { register, handleSubmit, formState: { errors }, watch, setError } = useForm<FirstAccessForm>();
 
@@ -61,6 +74,7 @@ export default function PrimerAccesoPage() {
 
             toast.success('Contraseña configurada exitosamente');
             setTimeout(() => {
+                clearAuth(); // Limpiar sesión antes de ir al login
                 router.push('/login');
             }, 1500);
         } catch (error: any) {
