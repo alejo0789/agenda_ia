@@ -101,7 +101,7 @@ class DisponibilidadService:
         db: Session,
         sede_id: int,
         nombre_especialista: str,
-        servicio_id: int,
+        servicio: str,
         fecha: date,
         hora_inicio: time
     ) -> DisponibilidadNombreResponse:
@@ -124,11 +124,15 @@ class DisponibilidadService:
              raise HTTPException(status_code=404, detail=f"Especialista '{nombre_especialista}' no encontrado")
 
         # 2. Obtener duración del servicio para calcular hora_fin
-        servicio = db.query(Servicio).filter(Servicio.id == servicio_id).first()
-        if not servicio:
-            raise HTTPException(status_code=400, detail="Servicio no encontrado")
+        servicio_obj = db.query(Servicio).filter(
+            Servicio.nombre.ilike(f"%{servicio}%"),
+            Servicio.sede_id == sede_id
+        ).first()
         
-        duracion = servicio.duracion_minutos
+        if not servicio_obj:
+            raise HTTPException(status_code=400, detail=f"Servicio '{servicio}' no encontrado en esta sede")
+        
+        duracion = servicio_obj.duracion_minutos
         dt_inicio = datetime.combine(fecha, hora_inicio)
         dt_fin = dt_inicio + timedelta(minutes=duracion)
         hora_fin = dt_fin.time()

@@ -207,7 +207,7 @@ class DisponibilidadResponse(BaseModel):
 
 class DisponibilidadNombreRequest(BaseModel):
     nombre_especialista: str
-    servicio_id: int
+    servicio: str
     fecha: date
     hora_inicio: time
 

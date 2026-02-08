@@ -401,7 +401,7 @@ def consultar_disponibilidad_nombre(
         db=db,
         sede_id=auth_context["user"].sede_id,
         nombre_especialista=request.nombre_especialista,
-        servicio_id=request.servicio_id,
+        servicio=request.servicio,
         fecha=request.fecha,
         hora_inicio=request.hora_inicio
     )

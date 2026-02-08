@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, Sparkles, Loader2, Bot, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/stores/authStore';
 
 interface Message {
     id: string;
@@ -18,6 +19,7 @@ interface IACitasModalProps {
 }
 
 export function IACitasModal({ isOpen, onClose, onCitaCreated }: IACitasModalProps) {
+    const { token, user } = useAuthStore();
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
@@ -80,6 +82,9 @@ export function IACitasModal({ isOpen, onClose, onCitaCreated }: IACitasModalPro
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    sessionId: user?.id ? `user_${user.id}` : 'guest_session',
+                    token: token,
+                    sede: user?.sede?.nombre || 'Sede no especificada',
                     message: userMessage.content,
                     conversationHistory: messages.map(m => ({
                         role: m.role,
