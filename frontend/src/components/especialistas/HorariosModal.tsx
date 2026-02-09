@@ -70,8 +70,6 @@ export default function HorariosModal({
                 hora_fin: DEFAULT_HORA_FIN,
             };
         });
-        // Domingo inactivo por defecto
-        initial[0].activo = false;
         return initial;
     });
 

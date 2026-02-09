@@ -72,6 +72,21 @@ class EspecialistaService:
         db.commit()
         db.refresh(db_especialista)
         
+        # CREATE DEFAULT SCHEDULES (07:00 - 20:00, Mon-Sun)
+        from .horario_service import HorarioService
+        from ..schemas.especialista import HorarioEspecialistaCreate
+        from datetime import time
+        
+        default_horarios = [
+            HorarioEspecialistaCreate(
+                dia_semana=dia,
+                hora_inicio=time(7, 0),
+                hora_fin=time(20, 0),
+                activo=True
+            ) for dia in range(7)
+        ]
+        HorarioService.create_batch(db, db_especialista.id, default_horarios)
+        
         # AUTOMATIC USER CREATION
         # Check explicit flag or implicit desire (if email exists and not explicit False)
         should_create_user = getattr(especialista, 'crear_usuario', True)
