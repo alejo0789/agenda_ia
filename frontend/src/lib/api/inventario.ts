@@ -187,10 +187,13 @@ export const movimientosApi = {
     },
 };
 
-export default {
+const inventarioApiExport = {
     proveedores: proveedoresApi,
     productos: productosApi,
     ubicaciones: ubicacionesApi,
     inventario: inventarioApi,
     movimientos: movimientosApi,
 };
+
+export default inventarioApiExport;
+
