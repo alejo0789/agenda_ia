@@ -491,11 +491,18 @@ export default function EspecialistaDetailPage() {
                                         key={servicio.servicio_id}
                                         className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
                                     >
-                                        <div className="flex items-center space-x-3">
-                                            <Scissors className="w-5 h-5 text-purple-500" />
-                                            <span className="font-medium">
-                                                Servicio #{servicio.servicio_id}
-                                            </span>
+                                        <div className="flex-1">
+                                            <div className="flex items-center space-x-3">
+                                                <Scissors className="w-5 h-5 text-purple-500" />
+                                                <span className="font-medium text-gray-900 dark:text-gray-100">
+                                                    {servicio.servicio?.nombre || `Servicio #${servicio.servicio_id}`}
+                                                </span>
+                                            </div>
+                                            {servicio.servicio?.precio_base && (
+                                                <p className="text-xs text-gray-500 ml-8 mt-1">
+                                                    Precio Base: ${Number(servicio.servicio.precio_base).toLocaleString()}
+                                                </p>
+                                            )}
                                         </div>
                                         <span
                                             className={cn(
@@ -507,7 +514,7 @@ export default function EspecialistaDetailPage() {
                                         >
                                             {servicio.tipo_comision === 'porcentaje'
                                                 ? `${servicio.valor_comision}%`
-                                                : `$${servicio.valor_comision.toLocaleString()}`}
+                                                : `$${Number(servicio.valor_comision).toLocaleString()}`}
                                         </span>
                                     </div>
                                 ))}

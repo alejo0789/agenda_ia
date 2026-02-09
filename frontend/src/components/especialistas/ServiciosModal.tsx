@@ -145,10 +145,12 @@ export default function ServiciosModal({
         }
     };
 
-    const getServicioInfo = (servicioId: number) => {
-        const servicio = todosLosServicios.find((s) => s.id === servicioId);
+    const getServicioInfo = (servicioId: number, servicioSnapshot?: any) => {
+        const catalogServicio = todosLosServicios.find((s) => s.id === servicioId);
+        const servicio = catalogServicio || servicioSnapshot;
+
         return {
-            nombre: servicio?.nombre || 'Servicio desconocido',
+            nombre: servicio?.nombre || `Servicio #${servicioId}`,
             precio: Number(servicio?.precio_base) || 0,
             tipo_comision: servicio?.tipo_comision,
             valor_comision: servicio?.valor_comision,
@@ -361,7 +363,7 @@ export default function ServiciosModal({
                                     // Por ahora mostraremos lo guardado en la asignación, ya que eso es lo que el backend usa para calcular nómina.
                                     // Si el usuario cambia el servicio master, debió usar el toggle "aplicar a todos" para actualizar asignaciones.
 
-                                    const info = getServicioInfo(servicio.servicio_id);
+                                    const info = getServicioInfo(servicio.servicio_id, (servicio as any).servicio);
                                     const comisionPesos = calcularComisionPesos(
                                         servicio.tipo_comision,
                                         servicio.valor_comision,

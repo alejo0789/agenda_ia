@@ -1,4 +1,4 @@
-// Tipos para el módulo de Especialistas
+import { Servicio } from './servicio';
 
 export interface Especialista {
     id: number;
@@ -77,6 +77,7 @@ export interface EspecialistaServicio {
     // Campos adicionales para mostrar
     servicio_nombre?: string;
     precio_base?: number;
+    servicio?: Servicio;
 }
 
 export interface EspecialistaServicioFormData {
