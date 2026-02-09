@@ -6,6 +6,7 @@ from typing import Optional
 from ..models.cita import Cita
 from ..models.cliente import Cliente
 from ..models.especialista import Especialista
+from ..models.servicio import Servicio
 from ..models.caja import Factura
 
 class DashboardService:
@@ -47,10 +48,35 @@ class DashboardService:
             
             ingresos_mes = facturas_query.scalar() or 0
             ingresos_mes = float(ingresos_mes)
+
+        # 5. Próximas Citas (Del mismo día)
+        now = datetime.now()
+        proximas_citas_query = db.query(Cita).filter(
+            Cita.fecha == today,
+            Cita.estado.in_(['pendiente', 'confirmada']),
+            # Solo mostrar citas desde la hora actual o todas si son del dia (ajustar segun necesidad, aqui mostramos todas las pendientes del dia)
+        ).order_by(Cita.hora_inicio.asc()).limit(5)
+
+        if sede_id:
+            proximas_citas_query = proximas_citas_query.filter(Cita.sede_id == sede_id)
+        
+        proximas_citas_db = proximas_citas_query.all()
+        proximas_citas = []
+        for c in proximas_citas_db:
+            servicio_nombre = c.servicios[0].nombre if c.servicios else "Sin servicio"
+            proximas_citas.append({
+                "id": c.id,
+                "hora": c.hora_inicio.strftime("%I:%M %p"),
+                "cliente": f"{c.cliente.nombre} {c.cliente.apellido}",
+                "servicio": servicio_nombre,
+                "especialista": f"{c.especialista.nombre} {c.especialista.apellido}",
+                "estado": c.estado
+            })
             
         return {
             "citas_hoy": citas_hoy,
             "clientes_activos": clientes_activos,
             "especialistas_activos": especialistas_activos,
-            "ingresos_mes": ingresos_mes
+            "ingresos_mes": ingresos_mes,
+            "proximas_citas": proximas_citas
         }

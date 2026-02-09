@@ -174,24 +174,34 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <AppointmentItem
-                                time="09:00 AM"
-                                client="María González"
-                                service="Alisado Brasileño"
-                                specialist="Ana Martínez"
-                            />
-                            <AppointmentItem
-                                time="11:30 AM"
-                                client="Carlos Pérez"
-                                service="Corte de Cabello"
-                                specialist="Laura Sánchez"
-                            />
-                            <AppointmentItem
-                                time="02:00 PM"
-                                client="Sofía Torres"
-                                service="Tinte + Corte"
-                                specialist="María García"
-                            />
+                            {isLoading ? (
+                                <div className="space-y-4">
+                                    {[1, 2, 3].map((i) => (
+                                        <div key={i} className="flex items-center space-x-4 animate-pulse">
+                                            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-800 rounded-full" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
+                                                <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : stats?.proximas_citas && stats.proximas_citas.length > 0 ? (
+                                stats.proximas_citas.map((cita) => (
+                                    <AppointmentItem
+                                        key={cita.id}
+                                        time={cita.hora}
+                                        client={cita.cliente}
+                                        service={cita.servicio}
+                                        specialist={cita.especialista}
+                                    />
+                                ))
+                            ) : (
+                                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                    <Calendar className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                    <p>No hay citas programadas para hoy</p>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
