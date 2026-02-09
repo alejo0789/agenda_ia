@@ -56,7 +56,7 @@ def sync_specialists():
                     nombre=f"{e.nombre} {e.apellido}",
                     username=username,
                     email=e.email,
-                    password_hash=PasswordService.hash_password('Especialista123!'),
+                    password_hash=PasswordService.hash_password('Cambiar123!'),
                     rol_id=rol_id,
                     especialista_id=e.id,
                     estado='activo',

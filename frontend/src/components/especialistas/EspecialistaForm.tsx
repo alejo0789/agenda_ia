@@ -349,7 +349,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                                 name="nombre"
                                 value={formData.nombre}
                                 onChange={handleChange}
-                                placeholder="María"
+                                placeholder="Nombre"
                                 className={errors.nombre ? 'border-red-500' : ''}
                             />
                             {errors.nombre && (
@@ -367,7 +367,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                                 name="apellido"
                                 value={formData.apellido}
                                 onChange={handleChange}
-                                placeholder="García Rodríguez"
+                                placeholder="Apellidos"
                                 className={errors.apellido ? 'border-red-500' : ''}
                             />
                             {errors.apellido && (
@@ -426,7 +426,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                                 type="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                placeholder="maria.garcia@email.com"
+                                placeholder="ejemplo@email.com"
                                 className={errors.email ? 'border-red-500' : ''}
                             />
                             {errors.email && (
@@ -438,7 +438,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                         {mode === 'create' && (
                             <div className="space-y-2">
                                 <Label htmlFor="password">
-                                    Contraseña (para usuario)
+                                    Contraseña (para usuario) <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="password"
@@ -446,13 +446,13 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                                     type="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    placeholder="******"
+                                    placeholder="Mínimo 6 caracteres"
                                     className={errors.password ? 'border-red-500' : ''}
                                 />
                                 {errors.password && (
                                     <p className="text-xs text-red-500">{errors.password}</p>
                                 )}
-                                <p className="text-xs text-gray-500">Si se deja vacío, se usará &apos;Especialista123!&apos;</p>
+                                <p className="text-xs text-gray-500">Esta será la contraseña inicial del especialista.</p>
                             </div>
                         )}
 

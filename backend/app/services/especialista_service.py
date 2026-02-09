@@ -115,8 +115,12 @@ class EspecialistaService:
                          counter += 1
                      
                      # Create User
-                     # Use provided password or default "Especialista123!"
-                     raw_password = getattr(especialista, 'password', None) or "Especialista123!"
+                     raw_password = getattr(especialista, 'password', None)
+                     if not raw_password:
+                         raise HTTPException(
+                             status_code=status.HTTP_400_BAD_REQUEST,
+                             detail="Se requiere una contraseña para crear el usuario del especialista"
+                         )
                      hashed = PasswordService.hash_password(raw_password)
                      
                      new_user = Usuario(
