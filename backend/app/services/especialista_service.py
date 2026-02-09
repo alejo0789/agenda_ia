@@ -65,7 +65,7 @@ class EspecialistaService:
                 )
 
         db_especialista = Especialista(
-            **especialista.model_dump(exclude={'crear_usuario'}),
+            **especialista.model_dump(exclude={'crear_usuario', 'password'}),
             sede_id=admin_sede_id
         )
         db.add(db_especialista)
