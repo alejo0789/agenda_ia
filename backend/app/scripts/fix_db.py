@@ -7,7 +7,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')
 from sqlalchemy import text, inspect
 from app.database import engine, SessionLocal
 from app.models.sede import Sede
-from app.models.auth import Rol, Permiso
+from app.models.user import Rol
+from app.models.auth import Permiso
 from app.models.caja import MetodoPago
 
 def fix_database():
