@@ -50,11 +50,10 @@ class DashboardService:
             ingresos_mes = float(ingresos_mes)
 
         # 5. Próximas Citas (Del mismo día)
-        now = datetime.now()
+        # Estados válidos: agendada, confirmada, cliente_llego
         proximas_citas_query = db.query(Cita).filter(
             Cita.fecha == today,
-            Cita.estado.in_(['pendiente', 'confirmada']),
-            # Solo mostrar citas desde la hora actual o todas si son del dia (ajustar segun necesidad, aqui mostramos todas las pendientes del dia)
+            Cita.estado.in_(['agendada', 'confirmada', 'cliente_llego']),
         ).order_by(Cita.hora_inicio.asc())
 
         if sede_id:
@@ -63,12 +62,16 @@ class DashboardService:
         proximas_citas_db = proximas_citas_query.limit(5).all()
         proximas_citas = []
         for c in proximas_citas_db:
-            servicio_nombre = c.servicios[0].nombre if c.servicios else "Sin servicio"
+            servicio_txt = c.servicio.nombre if c.servicio else "Sin servicio"
+            
+            # Format time
+            hora_str = c.hora_inicio.strftime("%I:%M %p") if c.hora_inicio else "??:??"
+            
             proximas_citas.append({
                 "id": c.id,
-                "hora": c.hora_inicio.strftime("%I:%M %p"),
+                "hora": hora_str,
                 "cliente": f"{c.cliente.nombre} {c.cliente.apellido}",
-                "servicio": servicio_nombre,
+                "servicio": servicio_txt,
                 "especialista": f"{c.especialista.nombre} {c.especialista.apellido}",
                 "estado": c.estado
             })
