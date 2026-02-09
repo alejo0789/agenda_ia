@@ -13,7 +13,8 @@ class ComisionEspecialistaService:
     @staticmethod
     def get_by_especialista(db: Session, especialista_id: int) -> List[EspecialistaServicio]:
         """Listar todos los servicios asignados a un especialista"""
-        return db.query(EspecialistaServicio).filter(
+        from sqlalchemy.orm import joinedload
+        return db.query(EspecialistaServicio).options(joinedload(EspecialistaServicio.servicio)).filter(
             EspecialistaServicio.especialista_id == especialista_id
         ).all()
 

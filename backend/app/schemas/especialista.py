@@ -146,6 +146,7 @@ class BloqueoEspecialistaResponse(BloqueoEspecialistaBase):
 # ============================================
 # SCHEMAS DE SERVICIO DEL ESPECIALISTA
 # ============================================
+from .servicio import ServicioResponse
 
 class EspecialistaServicioBase(BaseModel):
     servicio_id: int
@@ -172,6 +173,7 @@ class EspecialistaServicioUpdate(BaseModel):
 class EspecialistaServicioResponse(EspecialistaServicioBase):
     especialista_id: int
     fecha_creacion: datetime
+    servicio: Optional[ServicioResponse] = None
 
     class Config:
         from_attributes = True

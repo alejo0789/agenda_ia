@@ -11,6 +11,9 @@ from ..schemas.especialista import (
     BloqueoEspecialistaCreate, BloqueoEspecialistaUpdate,
     EspecialistaServicioCreate, EspecialistaServicioUpdate
 )
+from ..services.servicio_service import ServicioService
+from ..services.comision_especialista_service import ComisionEspecialistaService
+from ..services.horario_service import HorarioService
 
 
 class EspecialistaService:
@@ -142,6 +145,37 @@ class EspecialistaService:
                  if not existing_user.especialista_id:
                      existing_user.especialista_id = db_especialista.id
                      db.commit()
+
+        # CREATE DEFAULT SCHEDULES (Mon-Sun, 07:00-20:00)
+        from datetime import time
+        try:
+            default_horarios = []
+            for dia in range(7): # 0=Sunday, 6=Saturday
+                default_horarios.append(HorarioEspecialistaCreate(
+                    dia_semana=dia,
+                    hora_inicio=time(7, 0),
+                    hora_fin=time(20, 0),
+                    activo=True
+                ))
+            HorarioService.create_batch(db, db_especialista.id, default_horarios)
+        except Exception as e:
+            print(f"Error creando horarios por defecto para el especialista {db_especialista.id}: {e}")
+
+        # ASSIGN ALL ACTIVE SERVICES BY DEFAULT
+        try:
+            servicios_activos = ServicioService.get_activos(db, db_especialista.sede_id)
+            for svc in servicios_activos:
+                try:
+                    especialista_svc = EspecialistaServicioCreate(
+                        servicio_id=svc.id,
+                        tipo_comision=svc.tipo_comision or "porcentaje",
+                        valor_comision=svc.valor_comision if svc.valor_comision is not None else 40
+                    )
+                    ComisionEspecialistaService.create(db, db_especialista.id, especialista_svc)
+                except Exception as e:
+                    print(f"Error asignando servicio {svc.id} al especialista {db_especialista.id}: {e}")
+        except Exception as e:
+            print(f"Error obteniendo servicios activos para asignar al especialista: {e}")
 
         return db_especialista
 
