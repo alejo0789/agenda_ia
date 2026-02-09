@@ -209,60 +209,48 @@ def agendar_cita_externo(
     - Asigna especialista por defecto si es necesario
     - Registra abono si aplica
     """
-    # 1. Validar Sede
-    sede = db.query(Sede).filter(Sede.nombre.ilike(f"%{request.cita.sede}%"), Sede.estado == 'activa').first()
+    # 1. Validar Sede (Prioridad: Sede enviada por el agente)
+    nombre_sede = request.sede
+    sede = db.query(Sede).filter(Sede.nombre.ilike(f"%{nombre_sede}%"), Sede.estado == 'activa').first()
     if not sede:
         # Si no la encuentra por nombre, intentamos buscar una marcada como principal
         sede = db.query(Sede).filter(Sede.es_principal == True).first()
         if not sede:
-            raise HTTPException(status_code=400, detail=f"Sede '{request.cita.sede}' no encontrada")
+            raise HTTPException(status_code=400, detail=f"Sede '{nombre_sede}' no encontrada")
 
     # 2. Validar o buscar Servicio (alisado, repolarizacion, garantia)
-    nombre_servicio = request.cita.servicio
+    nombre_servicio = request.servicio
     servicio = db.query(Servicio).filter(Servicio.nombre.ilike(f"%{nombre_servicio}%"), Servicio.sede_id == sede.id).first()
     
     if not servicio:
-        # Si no existe, lo buscamos en cualquier sede para ver si podemos "copiar" o usar uno genérico
-        # Pero según el requerimiento, deberían existir estos 3.
-        # Por ahora fallamos si no existe, el admin debería crearlos primero.
         raise HTTPException(status_code=400, detail=f"Servicio '{nombre_servicio}' no encontrado en la sede {sede.nombre}")
 
     # 3. Buscar o Crear Cliente
-    # Nombre, Cédula y Teléfono son obligatorios según el requerimiento
-    if not request.cliente.nombre or not request.cliente.cedula or not request.cliente.telefono:
+    if not request.nombre or not request.cedula or not request.telefono:
         raise HTTPException(status_code=400, detail="Nombre, Cédula y Teléfono del cliente son obligatorios")
 
     cliente_existente = db.query(Cliente).filter(
         or_(
-            Cliente.cedula == request.cliente.cedula,
-            Cliente.telefono == request.cliente.telefono
+            Cliente.cedula == request.cedula,
+            Cliente.telefono == request.telefono
         )
     ).first()
     
     if not cliente_existente:
         nuevo_cliente_data = ClienteCreate(
-            nombre=request.cliente.nombre,
-            apellido=request.cliente.apellido,
-            cedula=request.cliente.cedula,
-            telefono=request.cliente.telefono,
-            email=request.cliente.email
+            nombre=request.nombre,
+            apellido=request.apellido,
+            cedula=request.cedula,
+            telefono=request.telefono,
+            email=request.email
         )
         cliente_existente = ClienteService.create(db, nuevo_cliente_data, sede.id)
     
     # 4. Asignar Especialista
-    especialista_id = request.cita.especialista_id
+    especialista_id = request.especialista_id
     if not especialista_id:
-        # Buscar el primer especialista activo disponible en esa sede para ese servicio
-        especialista = db.query(Especialista).join(Especialista.servicios).filter(
-            Especialista.sede_id == sede.id,
-            Especialista.estado == 'activo',
-            EspecialistaServicio.servicio_id == servicio.id
-        ).first()
-        
-        if not especialista:
-            # Si no hay uno específico para el servicio, buscar cualquiera en la sede
-            especialista = db.query(Especialista).filter(Especialista.sede_id == sede.id, Especialista.estado == 'activo').first()
-            
+        # Buscar el primer especialista activo en esa sede
+        especialista = db.query(Especialista).filter(Especialista.sede_id == sede.id, Especialista.estado == 'activo').first()
         if not especialista:
             raise HTTPException(status_code=400, detail="No hay especialistas disponibles en esta sede")
         especialista_id = especialista.id
@@ -273,14 +261,14 @@ def agendar_cita_externo(
             cliente_id=cliente_existente.id,
             especialista_id=especialista_id,
             servicio_id=servicio.id,
-            fecha=request.cita.fecha,
-            hora_inicio=request.cita.hora_inicio,
-            notas=request.cita.notas,
+            fecha=request.fecha,
+            hora_inicio=request.hora_inicio,
+            notas=request.notas,
             # Abono
-            monto_abono=request.abono.monto if request.abono else None,
-            metodo_pago_id=request.abono.metodo_pago_id if request.abono else None,
-            referencia_pago=request.abono.referencia if request.abono else None,
-            concepto_abono=request.abono.concepto if request.abono else None
+            monto_abono=request.monto_abono,
+            metodo_pago_id=request.metodo_pago_id,
+            referencia_pago=request.referencia_abono,
+            concepto_abono=request.concepto_abono
         )
     
         current_user = auth_context["user"]

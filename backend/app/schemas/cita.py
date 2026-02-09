@@ -192,15 +192,26 @@ class CitaDatosSchema(BaseModel):
             raise ValueError(f'Servicio no válido. Opciones: {", ".join(servicios_validos)}')
         return v_normalizado
 
-class AbonoSchema(BaseModel):
-    monto: float
-    metodo_pago_id: int
-    referencia: Optional[str] = None
-    concepto: Optional[str] = None
-
 class CitaAgenteRequest(BaseModel):
-    """Schema para crear cita completa desde agente externo"""
-    cliente: ClienteAgenteSchema
-    cita: CitaDatosSchema
-    abono: Optional[AbonoSchema] = None
+    """Schema plano para crear cita completa desde agente externo (n8n friendly)"""
+    # Cliente
+    nombre: str
+    apellido: Optional[str] = None
+    cedula: str
+    telefono: str
+    email: Optional[str] = None
+    
+    # Cita
+    servicio: str = Field(..., description="alisado, repolarizacion, garantia")
+    fecha: date
+    hora_inicio: time
+    sede: str
+    especialista_id: Optional[int] = None
+    notas: Optional[str] = None
+    
+    # Abono (Opcional)
+    monto_abono: Optional[float] = None
+    metodo_pago_id: Optional[int] = None
+    referencia_abono: Optional[str] = None
+    concepto_abono: Optional[str] = None
 

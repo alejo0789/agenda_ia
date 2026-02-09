@@ -124,7 +124,7 @@
         {
             "parameters": {
                 "name": "crear_cita_final",
-                "description": "Registra la cita en el sistema. Úsala solo cuando el admin apruebe el resumen final.",
+                "description": "Registra la cita en el sistema. Requiere 3 objetos: 'cliente' (nombre, apellido, cedula, telefono), 'cita' (servicio, fecha, hora_inicio, sede, especialista_id) y 'abono' (opcional: monto, metodo_pago_id, referencia).",
                 "method": "POST",
                 "url": "http://TU_API_URL/api/citas/agendar-externo",
                 "sendHeaders": true,
@@ -137,8 +137,71 @@
                     ]
                 },
                 "sendBody": true,
-                "specifyBody": "json",
-                "jsonBody": "={{ $parameter.data }}",
+                "specifyBody": "fields",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "nombre",
+                            "value": "={{ $parameter.nombre }}"
+                        },
+                        {
+                            "name": "apellido",
+                            "value": "={{ $parameter.apellido }}"
+                        },
+                        {
+                            "name": "cedula",
+                            "value": "={{ $parameter.cedula }}"
+                        },
+                        {
+                            "name": "telefono",
+                            "value": "={{ $parameter.telefono }}"
+                        },
+                        {
+                            "name": "email",
+                            "value": "={{ $parameter.email }}"
+                        },
+                        {
+                            "name": "servicio",
+                            "value": "={{ $parameter.servicio }}"
+                        },
+                        {
+                            "name": "fecha",
+                            "value": "={{ $parameter.fecha }}"
+                        },
+                        {
+                            "name": "hora_inicio",
+                            "value": "={{ $parameter.hora_inicio }}"
+                        },
+                        {
+                            "name": "sede",
+                            "value": "={{ $parameter.sede }}"
+                        },
+                        {
+                            "name": "especialista_id",
+                            "value": "={{ $parameter.especialista_id }}"
+                        },
+                        {
+                            "name": "notas",
+                            "value": "={{ $parameter.notas }}"
+                        },
+                        {
+                            "name": "monto_abono",
+                            "value": "={{ $parameter.monto_abono }}"
+                        },
+                        {
+                            "name": "metodo_pago_id",
+                            "value": "={{ $parameter.metodo_pago_id }}"
+                        },
+                        {
+                            "name": "referencia_abono",
+                            "value": "={{ $parameter.referencia_abono }}"
+                        },
+                        {
+                            "name": "concepto_abono",
+                            "value": "={{ $parameter.concepto_abono }}"
+                        }
+                    ]
+                },
                 "options": {}
             },
             "id": "8d4f5c6e-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
