@@ -147,9 +147,13 @@ class CitaService:
                 
             else:
                 try:
-                    # Buscar caja abierta (opcional, pero recomendable para efectivo)
-                    caja_actual = CajaService.obtener_caja_actual(db)
+                    # Buscar caja abierta obligatoriamente en la sede de la cita
+                    caja_actual = CajaService.obtener_caja_actual(db, sede_id)
                     caja_id = caja_actual.id if caja_actual else None
+                    
+                    if not caja_id and int(cita_data.metodo_pago_id) == 1:
+                        # Si es efectivo y no hay caja, lanzamos error (regla de negocio comun)
+                        raise ValueError("No hay una caja abierta en esta sede para registrar el abono en efectivo.")
                     
                     abono_service = AbonoService(db)
                     abono_data = AbonoCreate(
@@ -167,9 +171,10 @@ class CitaService:
                         caja_id=caja_id
                     )
                 except Exception as e:
-                    # Loguear error pero no fallar la creación de la cita complete
-                    print(f"Error al crear abono automático: {e}")
-                    # Opcionalmente podríamos hacer raise e si queremos que falle todo
+                    # Si falla el abono, hacemos rollback de la cita para informar al usuario del error
+                    db.delete(cita)
+                    db.commit()
+                    raise ValueError(f"Error al registrar el abono: {str(e)}")
 
         return cita
     

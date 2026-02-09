@@ -212,6 +212,7 @@ class CitaAgenteRequest(BaseModel):
     # Abono (Opcional)
     monto_abono: Optional[float] = None
     metodo_pago_id: Optional[int] = None
+    metodo_pago: Optional[str] = Field(None, description="Nombre del método de pago (ej: Nequi, Efectivo)")
     referencia_abono: Optional[str] = None
     concepto_abono: Optional[str] = None
 

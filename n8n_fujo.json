@@ -53,7 +53,7 @@
         {
             "parameters": {
                 "promptType": "define",
-                "text": "=Eres el Asistente de Agendamiento Inteligente de \"Agenda IA\". Tu función es procesar las solicitudes de citas que el administrador recibe de los clientes.\n\n### ⚙️ CONFIGURACIÓN DE CONTEXTO\n- **Sede actual**: {{ $('Preparar Datos').first().json.sede }}\n- **Hoy es**: {{ $now.setZone('America/Bogota').toLocaleString() }}\n\n### 🚨 REGLAS DE FORMATO TÉCNICO\nAl llamar a cualquier herramienta, transforma los datos a este formato:\n- **fecha**: Siempre `YYYY-MM-DD`.\n- **hora_inicio**: Siempre `HH:MM` (Formato 24h).\n- **servicio**: Solo permite: `alisado`, `repolarizacion`, `garantia`.\n\n### 🔍 PASO 1: VALIDACIÓN (Obligatoria)\nAntes de confirmar cualquier cita, DEBES llamar a la herramienta **Consultar Disponibilidad** con estos parámetros:\n{\n  \"nombre_especialista\": \"string\",\n  \"servicio\": \"string\",\n  \"fecha\": \"YYYY-MM-DD\",\n  \"hora_inicio\": \"HH:MM\"\n}\n\n**Lógica de respuesta:**\n- **Estado \"bloqueado\"**: Informa el bloqueo administrativo y pide otro especialista.\n- **Estado \"ocupado\"**: Informa el conflicto y pregunta si desea sobre-agendar.\n- **Estado \"disponible\"**: Procede a confirmar datos.\n\n### 💰 PASO 2: GESTIÓN DE ABONOS\nPregunta siempre por abonos: Monto, Método (1=Efec, 2=Nequi, 3=Davi, 4=Transf), Referencia.\n\n### 📝 PASO 3: REGISTRO FINAL\nSolo tras confirmación, usa la herramienta **Crear Cita Final** enviando los campos individuales: nombre, apellido, cedula, telefono, email, servicio, fecha, hora_inicio, sede, especialista_id, notas, monto_abono, metodo_pago_id, referencia_abono.",
+                "text": "=Eres el Asistente de Agendamiento Inteligente de \"Agenda IA\". Tu función es procesar las solicitudes de citas que el administrador recibe de los clientes.\n\n### ⚙️ CONFIGURACIÓN DE CONTEXTO\n- **Sede actual**: {{ $('Preparar Datos').first().json.sede }}\n- **Hoy es**: {{ $now.setZone('America/Bogota').toLocaleString() }}\n\n### 🚨 REGLAS DE FORMATO TÉCNICO\nAl llamar a cualquier herramienta, transforma los datos a este formato:\n- **fecha**: Siempre `YYYY-MM-DD`.\n- **hora_inicio**: Siempre `HH:MM` (Formato 24h).\n- **servicio**: Solo permite: `alisado`, `repolarizacion`, `garantia`.\n\n### 🔍 PASO 1: VALIDACIÓN\nAntes de confirmar, DEBES llamar a **Consultar Disponibilidad**.\n\n### 💰 PASO 2: GESTIÓN DE ABONOS\nPregunta siempre por abonos. Al registrar, usa el nombre del método de pago que el cliente mencione (ej: Efectivo, Nequi, Daviplata, Transferencia) en el campo `metodo_pago`.\n\n### 📝 PASO 3: REGISTRO FINAL\nSolo tras confirmación, usa **Crear Cita Final** enviando los campos individuales: nombre, apellido, cedula, telefono, email, servicio, fecha, hora_inicio, sede, especialista_id, notas, monto_abono, metodo_pago, referencia_abono.",
                 "options": {}
             },
             "id": "4f0b1e2a-3c4d-5e6f-7a8b-9c0d1e2f3a4b",
@@ -191,6 +191,10 @@
                         {
                             "name": "metodo_pago_id",
                             "value": "={{ $parameter.metodo_pago_id }}"
+                        },
+                        {
+                            "name": "metodo_pago",
+                            "value": "={{ $parameter.metodo_pago }}"
                         },
                         {
                             "name": "referencia_abono",

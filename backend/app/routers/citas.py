@@ -255,6 +255,17 @@ def agendar_cita_externo(
             raise HTTPException(status_code=400, detail="No hay especialistas disponibles en esta sede")
         especialista_id = especialista.id
 
+    # 4.5 Resolver Método de Pago por Nombre (Si aplica)
+    metodo_pago_id = request.metodo_pago_id
+    if request.metodo_pago and not metodo_pago_id:
+        # Buscar el método de pago más parecido por nombre
+        mp = db.query(MetodoPago).filter(
+            MetodoPago.nombre.ilike(f"%{request.metodo_pago}%"),
+            MetodoPago.activo == True
+        ).first()
+        if mp:
+            metodo_pago_id = mp.id
+
     # 5. Crear Cita
     try:
         cita_create = CitaCreate(
