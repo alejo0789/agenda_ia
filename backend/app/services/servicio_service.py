@@ -74,7 +74,9 @@ class ServicioService:
             categoria_id=servicio.categoria_id,
             requiere_producto=servicio.requiere_producto,
             estado=servicio.estado,
-            color_calendario=servicio.color_calendario
+            color_calendario=servicio.color_calendario,
+            tipo_comision=servicio.tipo_comision,
+            valor_comision=servicio.valor_comision
         )
         
         db.add(db_servicio)
