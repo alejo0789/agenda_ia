@@ -8,6 +8,7 @@ from .password_service import PasswordService
 from .audit_service import AuditService
 from typing import Optional
 from sqlalchemy import or_
+from ..config import settings
 
 class AuthService:
     @staticmethod
@@ -76,7 +77,7 @@ class AuthService:
             token=access_token,
             ip=ip,
             user_agent=user_agent,
-            fecha_expiracion=datetime.utcnow() + timedelta(minutes=15)
+            fecha_expiracion=datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
         )
         db.add(sesion)
         
@@ -126,7 +127,7 @@ class AuthService:
         sesion = Sesion(
             usuario_id=user_id,
             token=new_access_token,
-            fecha_expiracion=datetime.utcnow() + timedelta(minutes=15)
+            fecha_expiracion=datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
         )
         db.add(sesion)
         db.commit()

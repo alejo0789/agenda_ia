@@ -36,9 +36,17 @@ apiClient.interceptors.response.use(
     (error) => {
         console.error('❌ Error Response:', error.response?.status, error.config?.url, error.response?.data);
         if (error.response?.status === 401) {
-            // Token expirado o inválido
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('user');
+            // Token expirado o inválido o sesión eliminada del backend
+            try {
+                const { useAuthStore } = require('@/stores/authStore');
+                useAuthStore.getState().clearAuth();
+            } catch (e) {
+                // Fallback si el store no está disponible
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('auth-storage');
+            }
             window.location.href = '/login';
         }
         return Promise.reject(error);

@@ -11,17 +11,21 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
+    const { isAuthenticated, _hasHydrated } = useAuthStore();
     const router = useRouter();
-    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (_hasHydrated && !isAuthenticated) {
             router.push('/login');
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, _hasHydrated, router]);
 
-    if (!isAuthenticated) {
-        return null;
+    if (!_hasHydrated || !isAuthenticated) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
+            </div>
+        );
     }
 
     return (

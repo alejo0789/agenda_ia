@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,9 +24,22 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const router = useRouter();
-    const setAuth = useAuthStore((state) => state.setAuth);
+    const { setAuth, isAuthenticated, _hasHydrated } = useAuthStore();
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Redirigir si ya está autenticado
+    useState(() => {
+        if (_hasHydrated && isAuthenticated) {
+            router.push('/dashboard');
+        }
+    });
+
+    useEffect(() => {
+        if (_hasHydrated && isAuthenticated) {
+            router.push('/dashboard');
+        }
+    }, [isAuthenticated, _hasHydrated, router]);
 
     const {
         register,
