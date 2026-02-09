@@ -99,11 +99,27 @@ export function IACitasModal({ isOpen, onClose, onCitaCreated }: IACitasModalPro
             }
 
             const data = await response.json();
+            console.log('n8n response data:', data);
+
+            let responseText = 'Cita procesada correctamente.';
+
+            if (data.output) {
+                responseText = data.output;
+            } else if (Array.isArray(data) && data.length > 0) {
+                const first = data[0];
+                responseText = first.output || first.message || first.response || (typeof first === 'string' ? first : responseText);
+            } else if (data.message) {
+                responseText = data.message;
+            } else if (data.response) {
+                responseText = data.response;
+            } else if (typeof data === 'string') {
+                responseText = data;
+            }
 
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: data.response || data.message || 'Cita procesada correctamente.',
+                content: responseText,
                 timestamp: new Date()
             };
 

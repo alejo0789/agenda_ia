@@ -19,7 +19,10 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    payload = verify_token(token, "access")
+    # Limpiar el token de prefijos accidentales (defensivo ante n8n/agentes)
+    clean_token = token.replace("Bearer ", "").strip()
+    
+    payload = verify_token(clean_token, "access")
     if payload is None:
         raise credentials_exception
     
@@ -29,9 +32,10 @@ async def get_current_user(
     
     # Verify session exists and is not expired
     sesion = db.query(Sesion).filter(
-        Sesion.token == token,
+        Sesion.token == clean_token,
         Sesion.fecha_expiracion > datetime.utcnow()
     ).first()
+
     
     if not sesion:
         raise credentials_exception
