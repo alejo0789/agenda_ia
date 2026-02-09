@@ -425,7 +425,7 @@ export function AppointmentModal({
     // Datos de la cita
     const [formData, setFormData] = useState({
         especialista_id: selectedSlot?.especialistaId || selectedCita?.especialista_id || especialistas[0]?.id || 0,
-        servicio_id: 0,
+        servicio_id: selectedCita?.servicio_id || 0,
         fecha: format(selectedDate, 'yyyy-MM-dd'),
         hora_inicio: selectedSlot?.hora || selectedCita?.hora_inicio || '09:00',
         notas: selectedCita?.notas || '',
@@ -452,8 +452,8 @@ export function AppointmentModal({
                 const data = await serviciosApi.getActivosPorCategoria();
                 setServiciosPorCategoria(data);
 
-                // Seleccionar el primer servicio disponible si no hay uno seleccionado
-                if (data.length > 0 && data[0].servicios.length > 0 && !formData.servicio_id) {
+                // Seleccionar el primer servicio disponible si no hay uno seleccionado y no estamos en modo edición
+                if (data.length > 0 && data[0].servicios.length > 0 && !formData.servicio_id && !isEditMode) {
                     setFormData(prev => ({
                         ...prev,
                         servicio_id: data[0].servicios[0].id
