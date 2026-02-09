@@ -1,4 +1,6 @@
 from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional, List
 
 class CitaDashboard(BaseModel):
     id: int
@@ -13,4 +15,4 @@ class DashboardStats(BaseModel):
     clientes_activos: int
     especialistas_activos: int
     ingresos_mes: Optional[float] = None
-    proximas_citas: list[CitaDashboard] = []
+    proximas_citas: List[CitaDashboard] = []
