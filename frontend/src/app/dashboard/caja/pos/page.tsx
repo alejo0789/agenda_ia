@@ -40,6 +40,7 @@ import EspecialistaSelector from '@/components/caja/EspecialistaSelector';
 import ClienteSelector from '@/components/caja/ClienteSelector';
 import ClienteAbonoBanner from '@/components/caja/ClienteAbonoBanner';
 import FacturasPendientesModal from '@/components/caja/FacturasPendientesModal';
+import MetodosPagoModal from '@/components/caja/MetodosPagoModal';
 import { toast } from 'sonner';
 
 export default function POSPage() {
@@ -83,6 +84,7 @@ export default function POSPage() {
     const [especialistaSeleccionado, setEspecialistaSeleccionado] = useState<number | null>(null);
     const [showPagoModal, setShowPagoModal] = useState(false);
     const [showFacturasPendientes, setShowFacturasPendientes] = useState(false);
+    const [showMetodosPagoModal, setShowMetodosPagoModal] = useState(false);
     const [facturaCreada, setFacturaCreada] = useState<{ id: number; numero: string; type: 'factura' | 'orden' } | null>(null);
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [pagosOriginales, setPagosOriginales] = useState<any[]>([]);
@@ -498,6 +500,7 @@ export default function POSPage() {
                             <span className="hidden sm:inline">Pendientes</span>
                         </button>
                     )}
+
                 </div>
 
                 {/* Catálogo */}
@@ -849,6 +852,11 @@ export default function POSPage() {
                 // Ajustamos el modal para que acepte solo ID si es necesario o buscamos el cliente completo antes.
                 />
             )}
+            {/* Modal de Métodos de Pago */}
+            <MetodosPagoModal
+                isOpen={showMetodosPagoModal}
+                onClose={() => setShowMetodosPagoModal(false)}
+            />
         </div>
     );
 }

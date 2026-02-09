@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import CrearAbonoModal from '@/components/caja/CrearAbonoModal';
 import ClienteSelector from '@/components/caja/ClienteSelector';
+import MetodosPagoModal from '@/components/caja/MetodosPagoModal';
 
 const menuCards = [
     {
@@ -100,6 +101,7 @@ export default function CajaPage() {
 
     // Estado para modal de abono
     const [showAbonoModal, setShowAbonoModal] = useState(false);
+    const [showMetodosPagoModal, setShowMetodosPagoModal] = useState(false);
     const [clienteParaAbono, setClienteParaAbono] = useState<{ id: number; nombre: string } | null>(null);
 
     return (
@@ -346,101 +348,135 @@ export default function CajaPage() {
                             </CardContent>
                         </Card>
                     )}
+
+                    {/* Tarjeta para Métodos de Pago - Solo Admin */}
+                    {canViewFinancials && (
+                        <Card
+                            onClick={() => setShowMetodosPagoModal(true)}
+                            className="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-indigo-200 dark:border-violet-800 hover:shadow-lg transition-all duration-300 cursor-pointer group h-full"
+                        >
+                            <CardContent className="p-6">
+                                <div className="flex items-start justify-between">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg">
+                                        <CreditCard className="w-6 h-6 text-white" />
+                                    </div>
+                                    <CreditCard className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-all" />
+                                </div>
+                                <h3 className="mt-4 font-semibold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                    Métodos de Pago
+                                </h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    Configurar medios de pago
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
 
             {/* Info caja actual */}
-            {cajaActual && (
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                                Información de Caja Actual
-                            </h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoCajaColor(cajaActual.estado)}`}>
-                                {cajaActual.estado.toUpperCase()}
-                            </span>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div>
-                                <p className="text-sm text-gray-500">Caja</p>
-                                <p className="font-medium">{cajaActual.nombre}</p>
+            {
+                cajaActual && (
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                    Información de Caja Actual
+                                </h3>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoCajaColor(cajaActual.estado)}`}>
+                                    {cajaActual.estado.toUpperCase()}
+                                </span>
                             </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Apertura</p>
-                                <p className="font-medium">
-                                    {new Date(cajaActual.fecha_apertura).toLocaleTimeString('es-CO', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                    })}
-                                </p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <p className="text-sm text-gray-500">Caja</p>
+                                    <p className="font-medium">{cajaActual.nombre}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500">Apertura</p>
+                                    <p className="font-medium">
+                                        {new Date(cajaActual.fecha_apertura).toLocaleTimeString('es-CO', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500">Monto Inicial</p>
+                                    <p className="font-medium">
+                                        {canViewFinancials ? formatPrecio(cajaActual.monto_apertura) : '********'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500">Efectivo Actual</p>
+                                    <p className="font-medium text-emerald-600">
+                                        {canViewFinancials ? formatPrecio(cajaActual.total_efectivo_teorico) : '********'}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Monto Inicial</p>
-                                <p className="font-medium">
-                                    {canViewFinancials ? formatPrecio(cajaActual.monto_apertura) : '********'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Efectivo Actual</p>
-                                <p className="font-medium text-emerald-600">
-                                    {canViewFinancials ? formatPrecio(cajaActual.total_efectivo_teorico) : '********'}
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                        </CardContent>
+                    </Card>
+                )
+            }
 
             {/* Modal de selección de cliente para abono */}
-            {showAbonoModal && !clienteParaAbono && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={() => setShowAbonoModal(false)}
-                    />
-                    <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                            Registrar Abono
-                        </h2>
-                        <p className="text-gray-500 dark:text-gray-400 mb-4 text-sm">
-                            Primero, selecciona el cliente que realizará el abono:
-                        </p>
-                        <ClienteSelector
-                            value={null}
-                            onChange={(cliente) => {
-                                if (cliente) {
-                                    setClienteParaAbono(cliente);
-                                }
-                            }}
-                            required={true}
-                        />
-                        <button
+            {
+                showAbonoModal && !clienteParaAbono && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                             onClick={() => setShowAbonoModal(false)}
-                            className="mt-4 w-full py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                        >
-                            Cancelar
-                        </button>
+                        />
+                        <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                                Registrar Abono
+                            </h2>
+                            <p className="text-gray-500 dark:text-gray-400 mb-4 text-sm">
+                                Primero, selecciona el cliente que realizará el abono:
+                            </p>
+                            <ClienteSelector
+                                value={null}
+                                onChange={(cliente) => {
+                                    if (cliente) {
+                                        setClienteParaAbono(cliente);
+                                    }
+                                }}
+                                required={true}
+                            />
+                            <button
+                                onClick={() => setShowAbonoModal(false)}
+                                className="mt-4 w-full py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Modal de crear abono */}
-            {clienteParaAbono && (
-                <CrearAbonoModal
-                    isOpen={true}
-                    onClose={() => {
-                        setClienteParaAbono(null);
-                        setShowAbonoModal(false);
-                    }}
-                    onSuccess={() => {
-                        setClienteParaAbono(null);
-                        setShowAbonoModal(false);
-                    }}
-                    clienteId={clienteParaAbono.id}
-                    clienteNombre={clienteParaAbono.nombre}
-                />
-            )}
+            {
+                clienteParaAbono && (
+                    <CrearAbonoModal
+                        isOpen={true}
+                        onClose={() => {
+                            setClienteParaAbono(null);
+                            setShowAbonoModal(false);
+                        }}
+                        onSuccess={() => {
+                            setClienteParaAbono(null);
+                            setShowAbonoModal(false);
+                        }}
+                        clienteId={clienteParaAbono.id}
+                        clienteNombre={clienteParaAbono.nombre}
+                    />
+                )
+            }
+            {/* Modal de Métodos de Pago */}
+            <MetodosPagoModal
+                isOpen={showMetodosPagoModal}
+                onClose={() => setShowMetodosPagoModal(false)}
+            />
         </div>
     );
 }

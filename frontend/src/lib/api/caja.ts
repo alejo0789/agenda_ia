@@ -11,6 +11,8 @@ import type {
     MovimientoCaja,
     MovimientoCajaCreate,
     MetodoPago,
+    MetodoPagoCreate,
+    MetodoPagoUpdate,
     Factura,
     FacturaDetalle,
     FacturaCreate,
@@ -234,8 +236,15 @@ export const metodosPagoApi = {
     },
 
     // Actualizar método de pago
-    async actualizarMetodo(metodoId: number, activo: boolean): Promise<MetodoPago> {
-        const { data } = await apiClient.put(`/metodos-pago/${metodoId}`, { activo });
+    // Actualizar método de pago
+    async actualizarMetodo(metodoId: number, datos: MetodoPagoUpdate): Promise<MetodoPago> {
+        const { data } = await apiClient.put(`/metodos-pago/${metodoId}`, datos);
+        return data;
+    },
+
+    // Crear método de pago
+    async crearMetodo(datos: MetodoPagoCreate): Promise<MetodoPago> {
+        const { data } = await apiClient.post('/metodos-pago', datos);
         return data;
     },
 };

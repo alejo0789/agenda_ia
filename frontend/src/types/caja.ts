@@ -8,6 +8,18 @@ export interface MetodoPago {
     requiere_referencia: boolean;
 }
 
+export interface MetodoPagoCreate {
+    nombre: string;
+    activo: boolean;
+    requiere_referencia: boolean;
+}
+
+export interface MetodoPagoUpdate {
+    nombre?: string;
+    activo?: boolean;
+    requiere_referencia?: boolean;
+}
+
 // ========== CAJA ==========
 export interface Caja {
     id: number;

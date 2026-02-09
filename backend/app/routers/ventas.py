@@ -16,7 +16,7 @@ from datetime import date
 from ..database import get_db
 from ..schemas.caja import (
     VentasDiaResponse, VentasResumenResponse,
-    MetodoPagoResponse, MetodoPagoUpdate
+    MetodoPagoResponse, MetodoPagoUpdate, MetodoPagoCreate
 )
 from ..services.ventas_service import VentasService
 from ..models.caja import MetodoPago
@@ -86,6 +86,35 @@ def listar_metodos(
     } for m in metodos]
 
 
+@metodos_router.post("", status_code=status.HTTP_201_CREATED)
+def crear_metodo(
+    data: MetodoPagoCreate,
+    db: Session = Depends(get_db),
+    _: dict = Depends(require_permission("config.editar"))
+):
+    """BE-MPAGO-003: Crear nuevo método de pago"""
+    # Verificar nombre único
+    existe = db.query(MetodoPago).filter(MetodoPago.nombre == data.nombre).first()
+    if existe:
+        raise HTTPException(status_code=400, detail="Ya existe un método de pago con este nombre")
+    
+    nuevo_metodo = MetodoPago(
+        nombre=data.nombre,
+        activo=data.activo,
+        requiere_referencia=data.requiere_referencia
+    )
+    db.add(nuevo_metodo)
+    db.commit()
+    db.refresh(nuevo_metodo)
+    
+    return {
+        'id': nuevo_metodo.id,
+        'nombre': nuevo_metodo.nombre,
+        'activo': bool(nuevo_metodo.activo),
+        'requiere_referencia': bool(nuevo_metodo.requiere_referencia)
+    }
+
+
 @metodos_router.put("/{metodo_id}")
 def actualizar_metodo(
     metodo_id: int,
@@ -93,13 +122,24 @@ def actualizar_metodo(
     db: Session = Depends(get_db),
     _: dict = Depends(require_permission("config.editar"))
 ):
-    """BE-MPAGO-002: Activar/desactivar método"""
+    """BE-MPAGO-002: Actualizar método de pago"""
     metodo = db.query(MetodoPago).filter(MetodoPago.id == metodo_id).first()
     if not metodo:
         raise HTTPException(status_code=404, detail="Método de pago no encontrado")
     
+    if data.nombre is not None:
+        # Verificar nombre único si cambia
+        if data.nombre != metodo.nombre:
+            existe = db.query(MetodoPago).filter(MetodoPago.nombre == data.nombre).first()
+            if existe:
+                raise HTTPException(status_code=400, detail="Ya existe un método de pago con este nombre")
+        metodo.nombre = data.nombre
+    
     if data.activo is not None:
         metodo.activo = data.activo
+        
+    if data.requiere_referencia is not None:
+        metodo.requiere_referencia = data.requiere_referencia
     
     db.commit()
     db.refresh(metodo)

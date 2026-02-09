@@ -96,12 +96,6 @@ const allMenuItems = [
         href: '/dashboard/admin/roles',
         roles: ['Administrador'],
     },
-    {
-        title: 'Configuración',
-        icon: Settings,
-        href: '/dashboard/configuracion',
-        roles: ['Administrador'],
-    },
 ];
 
 export default function Sidebar() {

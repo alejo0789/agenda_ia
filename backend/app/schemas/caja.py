@@ -410,6 +410,12 @@ class FacturaPendienteResumen(BaseModel):
 # SCHEMAS DE MÉTODO DE PAGO
 # ============================================
 
+class MetodoPagoCreate(BaseModel):
+    """Schema para crear método de pago"""
+    nombre: str = Field(..., max_length=50)
+    activo: bool = Field(default=True)
+    requiere_referencia: bool = Field(default=False)
+
 class MetodoPagoResponse(BaseModel):
     """Schema de respuesta de método de pago"""
     id: int
@@ -422,7 +428,9 @@ class MetodoPagoResponse(BaseModel):
 
 class MetodoPagoUpdate(BaseModel):
     """Schema para actualizar método de pago"""
+    nombre: Optional[str] = Field(None, max_length=50)
     activo: Optional[bool] = None
+    requiere_referencia: Optional[bool] = None
 
 
 # ============================================
