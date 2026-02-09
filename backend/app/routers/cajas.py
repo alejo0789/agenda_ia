@@ -81,7 +81,7 @@ def obtener_caja(
 
 @router.get("", response_model=CajasPaginadas)
 def listar_cajas(
-    estado: Optional[str] = Query(None, regex='^(abierta|cerrada|todos)$'),
+    estado: Optional[str] = Query(None, pattern='^(abierta|cerrada|todos)$'),
     pagina: int = Query(1, ge=1),
     por_pagina: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -105,7 +105,7 @@ def obtener_cuadre(
 @router.get("/{caja_id}/movimientos")
 def listar_movimientos(
     caja_id: int,
-    tipo: Optional[str] = Query(None, regex='^(ingreso|egreso|todos)$'),
+    tipo: Optional[str] = Query(None, pattern='^(ingreso|egreso|todos)$'),
     db: Session = Depends(get_db),
     _: dict = Depends(require_permission("caja.ver"))
 ):

@@ -29,7 +29,7 @@ router = APIRouter(
 
 @router.get("")
 def listar_pendientes(
-    estado: Optional[str] = Query('pendiente', regex='^(pendiente|aprobada|rechazada|todos)$'),
+    estado: Optional[str] = Query('pendiente', pattern='^(pendiente|aprobada|rechazada|todos)$'),
     especialista_id: Optional[int] = Query(None),
     cliente_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),

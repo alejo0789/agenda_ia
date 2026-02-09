@@ -30,14 +30,14 @@ etiquetas_router = APIRouter(
 @router.get("", response_model=ClientePaginado)
 def listar_clientes(
     query: Optional[str] = Query(None, description="Búsqueda por nombre, teléfono o email"),
-    estado: Optional[str] = Query('activo', regex='^(activo|inactivo|todos)$'),
+    estado: Optional[str] = Query('activo', pattern='^(activo|inactivo|todos)$'),
     etiqueta_id: Optional[int] = Query(None, description="Filtrar por etiqueta"),
     min_visitas: Optional[int] = Query(None, ge=0),
     max_visitas: Optional[int] = Query(None, ge=0),
     pagina: int = Query(1, ge=1, description="Número de página"),
     por_pagina: int = Query(20, ge=1, le=100, description="Items por página"),
     ordenar_por: str = Query('nombre', description="Campo para ordenar"),
-    orden: str = Query('asc', regex='^(asc|desc)$'),
+    orden: str = Query('asc', pattern='^(asc|desc)$'),
     db: Session = Depends(get_db),
     user: dict = Depends(require_permission("clientes.ver"))
 ):

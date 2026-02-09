@@ -30,7 +30,7 @@ router = APIRouter(
 
 @router.get("", response_model=FacturasPaginadas)
 def listar_facturas(
-    estado: Optional[str] = Query(None, regex='^(pendiente|pagada|anulada|todos)$'),
+    estado: Optional[str] = Query(None, pattern='^(pendiente|pagada|anulada|todos)$'),
     caja_id: Optional[int] = Query(None),
     cliente_id: Optional[int] = Query(None),
     fecha_desde: Optional[datetime] = Query(None),

@@ -244,7 +244,7 @@ def listar_productos(
     pagina: int = Query(1, ge=1, description="Número de página"),
     por_pagina: int = Query(20, ge=1, le=100, description="Resultados por página"),
     ordenar_por: str = Query('nombre', description="Campo para ordenar"),
-    orden: str = Query('asc', regex='^(asc|desc)$'),
+    orden: str = Query('asc', pattern='^(asc|desc)$'),
     db: Session = Depends(get_db),
     user: dict = Depends(require_permission("productos.ver"))
 ):
