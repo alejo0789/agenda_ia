@@ -51,7 +51,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
         telefono: '',
         email: '',
         password: '',
-        fecha_ingreso: '',
+        fecha_ingreso: new Date().toISOString().split('T')[0],
     });
 
     const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -427,6 +427,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                                 value={formData.email}
                                 onChange={handleChange}
                                 placeholder="ejemplo@email.com"
+                                autoComplete="off"
                                 className={errors.email ? 'border-red-500' : ''}
                             />
                             {errors.email && (
@@ -447,6 +448,7 @@ export default function EspecialistaForm({ especialistaId, mode }: EspecialistaF
                                     value={formData.password}
                                     onChange={handleChange}
                                     placeholder="Mínimo 6 caracteres"
+                                    autoComplete="new-password"
                                     className={errors.password ? 'border-red-500' : ''}
                                 />
                                 {errors.password && (
