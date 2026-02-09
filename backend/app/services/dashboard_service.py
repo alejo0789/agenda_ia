@@ -55,12 +55,12 @@ class DashboardService:
             Cita.fecha == today,
             Cita.estado.in_(['pendiente', 'confirmada']),
             # Solo mostrar citas desde la hora actual o todas si son del dia (ajustar segun necesidad, aqui mostramos todas las pendientes del dia)
-        ).order_by(Cita.hora_inicio.asc()).limit(5)
+        ).order_by(Cita.hora_inicio.asc())
 
         if sede_id:
             proximas_citas_query = proximas_citas_query.filter(Cita.sede_id == sede_id)
         
-        proximas_citas_db = proximas_citas_query.all()
+        proximas_citas_db = proximas_citas_query.limit(5).all()
         proximas_citas = []
         for c in proximas_citas_db:
             servicio_nombre = c.servicios[0].nombre if c.servicios else "Sin servicio"
