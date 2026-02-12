@@ -337,7 +337,7 @@ export const useCarritoStore = create<CarritoStoreState>((set, get) => ({
         };
         const id = generateId();
 
-        let nuevoItem = { ...item, id };
+        const nuevoItem = { ...item, id };
 
         // Aplicar precio colaborador si está activado el switch manual
         // OJO: El switch (aplicarPrecioColaborador) es el que manda ahora.
