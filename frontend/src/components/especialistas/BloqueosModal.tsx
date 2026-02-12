@@ -24,6 +24,7 @@ interface BloqueosModalProps {
     especialista: Especialista;
     isOpen: boolean;
     onClose: () => void;
+    isEspecialistaView?: boolean;
 }
 
 const DIAS_SEMANA = [
@@ -40,6 +41,7 @@ export default function BloqueosModal({
     especialista,
     isOpen,
     onClose,
+    isEspecialistaView = false,
 }: BloqueosModalProps) {
     const {
         bloqueos,
@@ -122,6 +124,17 @@ export default function BloqueosModal({
 
         if (!formData.fecha_fin) {
             newErrors.fecha_fin = 'La fecha fin es requerida';
+        }
+
+        // Validación de 24 horas de anticipación (Solo para Especialistas)
+        if (isEspecialistaView && formData.fecha_inicio) {
+            const fechaInicio = new Date(formData.fecha_inicio + 'T00:00:00');
+            const ahora = new Date();
+            const horasAnticipacion = (fechaInicio.getTime() - ahora.getTime()) / (1000 * 60 * 60);
+
+            if (horasAnticipacion < 24) {
+                newErrors.fecha_inicio = 'El bloqueo debe crearse con al menos 24 horas de anticipación';
+            }
         }
 
         if (formData.fecha_inicio && formData.fecha_fin && formData.fecha_fin < formData.fecha_inicio) {

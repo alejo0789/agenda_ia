@@ -21,6 +21,7 @@ import {
     LayoutDashboard,
     Building2,
     Shield,
+    Tag,
 } from 'lucide-react';
 
 const allMenuItems = [
@@ -61,10 +62,22 @@ const allMenuItems = [
         roles: ['Administrador', 'Cajero', 'Especialista'],
     },
     {
+        title: 'Mi Perfil',
+        icon: UserCircle,
+        href: '/dashboard/mi-perfil',
+        roles: ['Especialista'],
+    },
+    {
         title: 'Inventario',
         icon: Package,
         href: '/dashboard/inventario',
         roles: ['Administrador', 'Cajero'],
+    },
+    {
+        title: 'Descuentos',
+        icon: Tag,
+        href: '/dashboard/descuentos',
+        roles: ['Administrador'],
     },
     {
         title: 'Nómina',
@@ -211,7 +224,7 @@ export default function Sidebar() {
                             return (
                                 <li key={item.title}>
                                     <Link
-                                        href={item.href}
+                                        href={item.href || '#'}
                                         className={cn(
                                             'flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 group',
                                             isActive

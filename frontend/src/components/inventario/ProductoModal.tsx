@@ -298,26 +298,7 @@ export default function ProductoModal({ isOpen, onClose, productoId }: ProductoM
                                         Precios y Comisión
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Precio de compra *
-                                            </label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                                                <Input
-                                                    value={formatCurrency(formData.precio_compra)}
-                                                    onChange={(e) => handleChange('precio_compra', parseCurrency(e.target.value))}
-                                                    className={cn('pl-7', errors.precio_compra && 'border-red-500')}
-                                                    placeholder="0"
-                                                />
-                                            </div>
-                                            {errors.precio_compra && (
-                                                <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {errors.precio_compra}
-                                                </p>
-                                            )}
-                                        </div>
+
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Precio venta cliente *
@@ -363,8 +344,8 @@ export default function ProductoModal({ isOpen, onClose, productoId }: ProductoM
                                                     min="0"
                                                     max="100"
                                                     step="0.5"
-                                                    value={formData.comision_porcentaje || 0}
-                                                    onChange={(e) => handleChange('comision_porcentaje', parseFloat(e.target.value) || 0)}
+                                                    value={formData.comision_porcentaje || ''}
+                                                    onChange={(e) => handleChange('comision_porcentaje', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                                                     className="pr-8"
                                                     placeholder="0"
                                                 />

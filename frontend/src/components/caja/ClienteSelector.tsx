@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 
 interface ClienteSelectorProps {
     value: { id: number; nombre: string } | null;
-    onChange: (cliente: { id: number; nombre: string } | null) => void;
+    onChange: (cliente: { id: number; nombre: string; es_colaborador: boolean } | null) => void;
     required?: boolean;
     className?: string;
 }
@@ -94,7 +94,8 @@ export default function ClienteSelector({
     const handleSelectCliente = (cliente: ClienteListItem) => {
         onChange({
             id: cliente.id,
-            nombre: `${cliente.nombre} ${cliente.apellido || ''}`.trim()
+            nombre: `${cliente.nombre} ${cliente.apellido || ''}`.trim(),
+            es_colaborador: cliente.es_colaborador || false
         });
         setIsOpen(false);
         setSearch('');
@@ -125,7 +126,8 @@ export default function ClienteSelector({
 
             onChange({
                 id: clienteCreado.id,
-                nombre: `${clienteCreado.nombre} ${clienteCreado.apellido || ''}`.trim()
+                nombre: `${clienteCreado.nombre} ${clienteCreado.apellido || ''}`.trim(),
+                es_colaborador: clienteCreado.es_colaborador || false
             });
 
             setIsOpen(false);

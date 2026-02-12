@@ -150,6 +150,10 @@ class DetalleFacturaCreate(BaseModel):
     descuento_linea: Decimal = Field(ge=0, default=0)
     especialista_id: Optional[int] = Field(None, description="ID del especialista que realizó el servicio/venta")
     cita_id: Optional[int] = None
+    descuento_id: Optional[int] = None
+    tipo_descuento: Optional[str] = None
+    valor_descuento_aplicado: Optional[Decimal] = None
+    precio_colaborador_aplicado: Optional[bool] = False
     
     @field_validator('tipo')
     @classmethod
@@ -173,6 +177,10 @@ class DetalleFacturaResponse(BaseModel):
     especialista_nombre: Optional[str] = None
     cita_id: Optional[int] = None
     comision_calculada: Optional[Decimal] = None
+    descuento_id: Optional[int] = None
+    tipo_descuento: Optional[str] = None
+    valor_descuento_aplicado: Optional[Decimal] = None
+    precio_colaborador_aplicado: bool = False
     
     model_config = {"from_attributes": True}
 

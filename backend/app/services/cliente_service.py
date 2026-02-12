@@ -182,7 +182,9 @@ class ClienteService:
             "ultima_visita": cliente.ultima_visita,
             "etiquetas": etiquetas,
             "fecha_creacion": cliente.fecha_creacion,
-            "fecha_actualizacion": cliente.fecha_actualizacion
+            "fecha_creacion": cliente.fecha_creacion,
+            "fecha_actualizacion": cliente.fecha_actualizacion,
+            "es_colaborador": cliente.es_colaborador or False
         }
 
     @staticmethod

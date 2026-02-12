@@ -45,6 +45,7 @@ export interface Cliente {
 
     // Estado
     estado: 'activo' | 'inactivo';
+    es_colaborador: boolean;
 
     // Timestamps
     fecha_creacion: string;
@@ -69,6 +70,7 @@ export interface ClienteListItem {
     ultima_visita: string | null;
     etiquetas: ClienteEtiqueta[];
     estado: 'activo' | 'inactivo';
+    es_colaborador: boolean;
 }
 
 /**
@@ -83,6 +85,7 @@ export interface ClienteCreateDTO {
     fecha_nacimiento?: string;
     direccion?: string;
     notas?: string;
+    es_colaborador?: boolean;
 }
 
 /**
@@ -98,6 +101,7 @@ export interface ClienteUpdateDTO {
     direccion?: string;
     notas?: string;
     estado?: 'activo' | 'inactivo';
+    es_colaborador?: boolean;
 }
 
 /**
@@ -138,6 +142,7 @@ export interface ClienteFormData {
     fecha_nacimiento: string;
     direccion: string;
     notas: string;
+    es_colaborador: boolean;
 }
 
 /**

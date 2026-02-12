@@ -18,6 +18,7 @@ interface HorariosModalProps {
     especialista: Especialista;
     isOpen: boolean;
     onClose: () => void;
+    isEspecialistaView?: boolean;
 }
 
 const DIAS_SEMANA = [
@@ -57,6 +58,7 @@ export default function HorariosModal({
     especialista,
     isOpen,
     onClose,
+    isEspecialistaView = false,
 }: HorariosModalProps) {
     const { horarios, fetchHorarios, saveHorarios, isLoading } = useEspecialistaStore();
 
@@ -75,6 +77,7 @@ export default function HorariosModal({
 
     const [isSaving, setIsSaving] = useState(false);
     const [errors, setErrors] = useState<string[]>([]);
+    const [warnings, setWarnings] = useState<string[]>([]);
 
     // Cargar horarios al abrir modal
     useEffect(() => {
@@ -112,6 +115,8 @@ export default function HorariosModal({
         }
     }, [horarios]);
 
+    const [showWarningsConfirm, setShowWarningsConfirm] = useState(false);
+
     const toggleDia = (diaId: number) => {
         setDiasHorarios((prev) => ({
             ...prev,
@@ -120,6 +125,9 @@ export default function HorariosModal({
                 activo: !prev[diaId].activo,
             },
         }));
+        // Limpiar advertencias al interactuar
+        if (warnings.length > 0) setWarnings([]);
+        setShowWarningsConfirm(false);
     };
 
     const updateHora = (diaId: number, tipo: 'hora_inicio' | 'hora_fin', valor: string) => {
@@ -130,24 +138,66 @@ export default function HorariosModal({
                 [tipo]: valor,
             },
         }));
+        // Limpiar advertencias al interactuar
+        if (warnings.length > 0) setWarnings([]);
+        setShowWarningsConfirm(false);
     };
 
-    const validate = (): boolean => {
+    const validate = (): { isValid: boolean; activeWarnings: string[] } => {
         const newErrors: string[] = [];
+        const newWarnings: string[] = [];
 
-        Object.entries(diasHorarios).forEach(([diaId, horario]) => {
+        Object.entries(diasHorarios).forEach(([diaIdStr, horario]) => {
+            const diaId = Number(diaIdStr);
             if (horario.activo && horario.hora_fin <= horario.hora_inicio) {
-                const dia = DIAS_SEMANA.find((d) => d.id === Number(diaId));
+                const dia = DIAS_SEMANA.find((d) => d.id === diaId);
                 newErrors.push(`${dia?.nombre}: La hora de fin debe ser mayor a la hora de inicio`);
+            }
+
+            // Advertencia de 24h para Especialistas
+            if (isEspecialistaView && horario.activo) {
+                // Calculamos si el día objetivo está a menos de 24h
+                const now = new Date();
+                const currentDay = now.getDay(); // 0-6
+                const targetDay = diaId;
+
+                // Calculamos diferencia en días
+                let diffDays = (targetDay - currentDay + 7) % 7;
+                if (diffDays === 0) diffDays = 7; // Si es el mismo día, asumimos próxima semana o analizamos hora
+
+                // Si es "hoy" (0 días de diferencia lógica si ajustamos) o "mañana" (1 día)
+                if (diffDays === 1) {
+                    // Es mañana
+                    const diaNombre = DIAS_SEMANA.find((d) => d.id === diaId)?.nombre;
+                    newWarnings.push(
+                        `⚠️ ${diaNombre}: Por la regla de 24h, este cambio aplicará a partir del PRÓXIMO ${diaNombre}, no para mañana.`
+                    );
+                }
+
+                if (diffDays === 0) {
+                    // Es hoy
+                    const diaNombre = DIAS_SEMANA.find((d) => d.id === diaId)?.nombre;
+                    newWarnings.push(
+                        `⚠️ ${diaNombre}: No se pueden aplicar cambios para el mismo día. Aplicará para la próxima semana.`
+                    );
+                }
             }
         });
 
         setErrors(newErrors);
-        return newErrors.length === 0;
+        setWarnings(newWarnings);
+        return { isValid: newErrors.length === 0, activeWarnings: newWarnings };
     };
 
     const handleSave = async () => {
-        if (!validate()) return;
+        const { isValid, activeWarnings } = validate();
+        if (!isValid) return;
+
+        // Si hay advertencias y no se ha confirmado
+        if (activeWarnings.length > 0 && !showWarningsConfirm) {
+            setShowWarningsConfirm(true);
+            return;
+        }
 
         setIsSaving(true);
         try {
@@ -173,6 +223,7 @@ export default function HorariosModal({
         }
     };
 
+
     const aplicarHorarioATodos = () => {
         const lunesHorario = diasHorarios[1];
         setDiasHorarios((prev) => {
@@ -188,6 +239,8 @@ export default function HorariosModal({
             });
             return newState;
         });
+        if (warnings.length > 0) setWarnings([]);
+        setShowWarningsConfirm(false);
     };
 
     const marcarLunesAViernes = () => {
@@ -201,6 +254,8 @@ export default function HorariosModal({
             });
             return newState;
         });
+        if (warnings.length > 0) setWarnings([]);
+        setShowWarningsConfirm(false);
     };
 
     const calcularHorasTotales = () => {
@@ -262,6 +317,25 @@ export default function HorariosModal({
                         </div>
                     )}
 
+                    {/* Advertencias */}
+                    {warnings.length > 0 && (
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                            <h4 className="text-sm font-semibold text-yellow-800 dark:text-yellow-400 mb-2">
+                                Atencion:
+                            </h4>
+                            <ul className="text-sm text-yellow-700 dark:text-yellow-300 list-disc list-inside space-y-1">
+                                {warnings.map((w, i) => (
+                                    <li key={i}>{w}</li>
+                                ))}
+                            </ul>
+                            {showWarningsConfirm && (
+                                <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-2 font-medium">
+                                    Presiona "Guardar Horarios" nuevamente para confirmar que entiendes estas condiciones.
+                                </p>
+                            )}
+                        </div>
+                    )}
+
                     {/* Acciones Rápidas */}
                     <div className="flex flex-wrap gap-2">
                         <Button
@@ -290,7 +364,7 @@ export default function HorariosModal({
                                 <div
                                     key={dia.id}
                                     className={cn(
-                                        'flex items-center justify-between p-4 rounded-lg border transition-all',
+                                        'flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border transition-all gap-3 sm:gap-0',
                                         horario.activo
                                             ? 'border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10'
                                             : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
@@ -321,16 +395,16 @@ export default function HorariosModal({
 
                                     {/* Selectores de Hora */}
                                     {horario.activo ? (
-                                        <div className="flex items-center space-x-3">
-                                            <div className="flex items-center space-x-2">
-                                                <Clock className="w-4 h-4 text-gray-400" />
-                                                <div className="relative">
+                                        <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+                                            <div className="flex items-center space-x-2 flex-1 sm:flex-none">
+                                                <Clock className="w-4 h-4 text-gray-400 hidden sm:block" />
+                                                <div className="relative w-full sm:w-auto">
                                                     <select
                                                         value={horario.hora_inicio}
                                                         onChange={(e) =>
                                                             updateHora(dia.id, 'hora_inicio', e.target.value)
                                                         }
-                                                        className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pl-3 pr-8 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                                        className="w-full sm:w-auto appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pl-3 pr-8 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                                     >
                                                         {TIME_OPTIONS.map((time) => (
                                                             <option key={time} value={time}>
@@ -342,15 +416,15 @@ export default function HorariosModal({
                                                 </div>
                                             </div>
 
-                                            <span className="text-gray-400">a</span>
+                                            <span className="text-gray-400 px-1">a</span>
 
-                                            <div className="relative">
+                                            <div className="relative flex-1 sm:flex-none">
                                                 <select
                                                     value={horario.hora_fin}
                                                     onChange={(e) =>
                                                         updateHora(dia.id, 'hora_fin', e.target.value)
                                                     }
-                                                    className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pl-3 pr-8 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                                    className="w-full sm:w-auto appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pl-3 pr-8 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                                 >
                                                     {TIME_OPTIONS.map((time) => (
                                                         <option key={time} value={time}>
@@ -362,7 +436,7 @@ export default function HorariosModal({
                                             </div>
                                         </div>
                                     ) : (
-                                        <span className="text-gray-400 dark:text-gray-500 text-sm italic">
+                                        <span className="text-gray-400 dark:text-gray-500 text-sm italic sm:text-right w-full sm:w-auto pl-14 sm:pl-0">
                                             No disponible
                                         </span>
                                     )}

@@ -8,6 +8,7 @@ from .producto import Proveedor, Producto, UbicacionInventario, Inventario, Movi
 from .cita import Cita, EstadoCita
 from .caja import Caja, MetodoPago, Factura, DetalleFactura, PagoFactura, MovimientoCaja, FacturaPendiente, Configuracion
 from .abono import Abono, RedencionAbono
+from .descuento import Descuento
 
 __all__ = [
     "Usuario", "Rol", "Sede", "Permiso", "RolPermiso", "Sesion", "LogAuditoria",
@@ -17,6 +18,6 @@ __all__ = [
     "Proveedor", "Producto", "UbicacionInventario", "Inventario", "MovimientoInventario",
     "Cita", "EstadoCita",
     "Caja", "MetodoPago", "Factura", "DetalleFactura", "PagoFactura", "MovimientoCaja", "FacturaPendiente", "Configuracion",
-    "Abono", "RedencionAbono"
+    "Abono", "RedencionAbono",
+    "Descuento"
 ]
-

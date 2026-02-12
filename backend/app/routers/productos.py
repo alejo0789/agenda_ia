@@ -216,7 +216,8 @@ def listar_productos_proveedor(
             stock_minimo=producto.stock_minimo,
             estado=producto.estado,
             proveedor_nombre=producto.proveedor.nombre if producto.proveedor else None,
-            alerta_stock_bajo=producto.stock_minimo > 0 and stock_total < producto.stock_minimo
+            alerta_stock_bajo=producto.stock_minimo > 0 and stock_total < producto.stock_minimo,
+            precio_colaborador=producto.precio_colaborador
         ))
     
     return result
@@ -282,7 +283,8 @@ def listar_productos(
             stock_minimo=producto.stock_minimo,
             estado=producto.estado,
             proveedor_nombre=producto.proveedor.nombre if producto.proveedor else None,
-            alerta_stock_bajo=producto.stock_minimo > 0 and stock_total < producto.stock_minimo
+            alerta_stock_bajo=producto.stock_minimo > 0 and stock_total < producto.stock_minimo,
+            precio_colaborador=producto.precio_colaborador
         ))
     
     total_paginas = (total + por_pagina - 1) // por_pagina
@@ -321,7 +323,8 @@ def listar_productos_activos(
             stock_minimo=producto.stock_minimo,
             estado=producto.estado,
             proveedor_nombre=producto.proveedor.nombre if producto.proveedor else None,
-            alerta_stock_bajo=producto.stock_minimo > 0 and stock_total < producto.stock_minimo
+            alerta_stock_bajo=producto.stock_minimo > 0 and stock_total < producto.stock_minimo,
+            precio_colaborador=producto.precio_colaborador
         ))
     
     return result
@@ -363,7 +366,8 @@ def productos_sin_stock(
             stock_minimo=producto.stock_minimo,
             estado=producto.estado,
             proveedor_nombre=producto.proveedor.nombre if producto.proveedor else None,
-            alerta_stock_bajo=True
+            alerta_stock_bajo=True,
+            precio_colaborador=producto.precio_colaborador
         ))
     
     return result

@@ -86,35 +86,63 @@ class VentasService:
         }
     
     @staticmethod
-    def ventas_periodo(db: Session, sede_id: int, fecha_inicio: date, fecha_fin: date) -> dict:
-        """Obtiene ventas de una sede por período"""
+    def ventas_periodo(db: Session, sede_id: int, fecha_inicio: date, fecha_fin: date) -> list:
+        """Obtiene ventas diarias en un período"""
         dt_inicio = datetime.combine(fecha_inicio, datetime.min.time())
         dt_fin = datetime.combine(fecha_fin, datetime.max.time())
         
-        result = db.query(
-            func.count(Factura.id).label('total_facturas'),
+        # 1. Agrupar facturas por día
+        query = db.query(
+            func.date(Factura.fecha).label('fecha'),
+            func.count(Factura.id).label('cantidad_facturas'),
             func.sum(Factura.total).label('total_ventas')
         ).filter(
             Factura.sede_id == sede_id,
             Factura.fecha >= dt_inicio,
             Factura.fecha <= dt_fin,
             Factura.estado == 'pagada'
-        ).first()
+        ).group_by(func.date(Factura.fecha)).order_by(func.date(Factura.fecha))
         
-        total_facturas = result.total_facturas or 0
-        total_ventas = Decimal(str(result.total_ventas or 0))
-        promedio = total_ventas / total_facturas if total_facturas > 0 else Decimal(0)
+        resultados_generales = query.all()
         
-        metodos = VentasService.ventas_por_metodo_pago(db, sede_id, fecha_inicio, fecha_fin)
+        # 2. Agrupar detalle por día para separar servicios y productos
+        query_detalle = db.query(
+            func.date(Factura.fecha).label('fecha'),
+            func.sum(case((DetalleFactura.tipo == 'servicio', DetalleFactura.subtotal), else_=0)).label('servicios'),
+            func.sum(case((DetalleFactura.tipo == 'producto', DetalleFactura.subtotal), else_=0)).label('productos')
+        ).select_from(DetalleFactura).join(Factura).filter(
+            Factura.sede_id == sede_id,
+            Factura.fecha >= dt_inicio,
+            Factura.fecha <= dt_fin,
+            Factura.estado == 'pagada'
+        ).group_by(func.date(Factura.fecha))
         
-        return {
-            'fecha_inicio': fecha_inicio,
-            'fecha_fin': fecha_fin,
-            'total_facturas': total_facturas,
-            'total_ventas': total_ventas,
-            'promedio_ticket': round(promedio, 2),
-            'metodos_pago': metodos
+        resultados_detalle = query_detalle.all()
+        
+        # Mapear detalle por fecha para acceso rápido
+        detalles_map = {
+            str(r.fecha): {'servicios': r.servicios, 'productos': r.productos} 
+            for r in resultados_detalle
         }
+        
+        lista_ventas = []
+        
+        for r in resultados_generales:
+            fecha_str = str(r.fecha)
+            det = detalles_map.get(fecha_str, {'servicios': 0, 'productos': 0})
+            
+            # TODO: Calcular facturas anuladas si es necesario
+            
+            lista_ventas.append({
+                'fecha': r.fecha, # Pydantic serializará date
+                'cantidad_facturas': r.cantidad_facturas,
+                'cantidad_facturas_anuladas': 0, # Placeholder
+                'total_ventas': float(r.total_ventas or 0),
+                'total_servicios': float(det['servicios'] or 0),
+                'total_productos': float(det['productos'] or 0)
+            })
+            
+        return lista_ventas
     
     @staticmethod
     def ventas_por_metodo_pago(db: Session, sede_id: int, fecha_inicio: date = None, fecha_fin: date = None) -> list:

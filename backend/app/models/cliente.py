@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Text, DateTime, CheckConstraint, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, Text, DateTime, CheckConstraint, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import JSON
@@ -34,6 +34,7 @@ class Cliente(Base):
     
     # Estado y control
     estado = Column(String(20), default='activo')
+    es_colaborador = Column(Boolean, default=False)
     
     # Timestamps
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())

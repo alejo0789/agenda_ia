@@ -70,6 +70,7 @@ class ClienteBase(BaseModel):
     fecha_nacimiento: Optional[date] = Field(None, description="Fecha de nacimiento")
     direccion: Optional[str] = Field(None, description="Dirección")
     notas: Optional[str] = Field(None, description="Notas adicionales")
+    es_colaborador: bool = Field(default=False, description="¿Es colaborador?")
     
     @field_validator('cedula')
     @classmethod
@@ -132,6 +133,7 @@ class ClienteUpdate(BaseModel):
     fecha_nacimiento: Optional[date] = None
     direccion: Optional[str] = None
     notas: Optional[str] = None
+    es_colaborador: Optional[bool] = None
     estado: Optional[str] = Field(None, pattern='^(activo|inactivo)$')
     
     @field_validator('cedula')
@@ -192,6 +194,7 @@ class ClienteResponse(ClienteBase):
             "etiquetas": etiquetas or [],
             "fecha_creacion": cliente.fecha_creacion,
             "fecha_actualizacion": cliente.fecha_actualizacion,
+            "es_colaborador": cliente.es_colaborador or False,
         }
         return cls(**data)
 
@@ -208,6 +211,7 @@ class ClienteListResponse(BaseModel):
     ultima_visita: Optional[date]
     etiquetas: List[EtiquetaSimple] = []
     estado: str
+    es_colaborador: bool = False
     
     class Config:
         from_attributes = True

@@ -266,7 +266,11 @@ class FacturaService:
                 descuento_linea=item_data.descuento_linea,
                 subtotal=round(item_subtotal, 2),
                 especialista_id=item_data.especialista_id,
-                cita_id=item_data.cita_id
+                cita_id=item_data.cita_id,
+                descuento_id=item_data.descuento_id,
+                tipo_descuento=item_data.tipo_descuento,
+                valor_descuento_aplicado=item_data.valor_descuento_aplicado,
+                precio_colaborador_aplicado=item_data.precio_colaborador_aplicado or False
             )
             db.add(detalle)
             
@@ -385,7 +389,11 @@ class FacturaService:
                 descuento_linea=item_data.descuento_linea,
                 subtotal=round(item_subtotal, 2),
                 especialista_id=item_data.especialista_id,
-                cita_id=item_data.cita_id
+                cita_id=item_data.cita_id,
+                descuento_id=item_data.descuento_id,
+                tipo_descuento=item_data.tipo_descuento,
+                valor_descuento_aplicado=item_data.valor_descuento_aplicado,
+                precio_colaborador_aplicado=item_data.precio_colaborador_aplicado or False
             )
             db.add(detalle)
             

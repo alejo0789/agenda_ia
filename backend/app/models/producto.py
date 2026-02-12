@@ -60,6 +60,7 @@ class Producto(Base):
     # Precios
     precio_compra = Column(Numeric(12, 2), default=0)
     precio_venta = Column(Numeric(12, 2), nullable=False)
+    precio_colaborador = Column(Numeric(12, 2), default=0)  # Precio para colaboradores/empleados
     
     # Stock
     stock_actual = Column(Numeric(12, 3), default=0)
@@ -69,6 +70,7 @@ class Producto(Base):
     
     # Comisión por venta del producto
     comision_venta = Column(Numeric(5, 2), default=0)  # Porcentaje de comisión
+    comision_porcentaje = Column(Numeric(5, 2), default=0)  # Porcentaje de comisión (alias)
     
     # Estado
     estado = Column(String(20), default='activo', index=True)

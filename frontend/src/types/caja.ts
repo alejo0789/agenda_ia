@@ -292,6 +292,12 @@ export interface ItemCarrito {
     especialista_nombre: string;
     cita_id?: number;
     factura_pendiente_id?: number; // ID del servicio pendiente (si viene de facturas en espera)
+    descuento_id?: number;
+    tipo_descuento?: 'porcentaje' | 'monto_fijo';
+    valor_descuento?: number;
+    precio_colaborador_aplicado?: boolean;
+    precio_regular?: number;
+    precio_colaborador?: number; // Sólo para productos
 }
 
 // ========== PAGINACIÓN ==========

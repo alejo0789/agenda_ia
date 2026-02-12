@@ -211,6 +211,12 @@ class DetalleFactura(Base):
     # Vinculación con cita (si aplica)
     cita_id = Column(Integer, ForeignKey("citas.id"))
     
+    # Descuentos y Precio Colaborador
+    descuento_id = Column(Integer, ForeignKey("descuentos.id"))
+    tipo_descuento = Column(String(20)) # 'porcentaje' o 'monto_fijo'
+    valor_descuento_aplicado = Column(DECIMAL(12, 2))
+    precio_colaborador_aplicado = Column(Boolean, default=False)
+    
     # Timestamp
     fecha_creacion = Column(TIMESTAMP, server_default=func.current_timestamp())
     
@@ -224,6 +230,7 @@ class DetalleFactura(Base):
     factura = relationship("Factura", back_populates="detalle")
     especialista = relationship("Especialista")
     cita = relationship("Cita")
+    descuento = relationship("Descuento")
     
     def __repr__(self):
         return f"<DetalleFactura(id={self.id}, tipo='{self.tipo}', item_id={self.item_id}, subtotal={self.subtotal})>"

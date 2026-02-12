@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles  # Importar StaticFiles
 from .routers import users, auth, roles, especialistas, servicios, clientes, citas, productos, inventario, sedes, dashboard
-from .routers import cajas, facturas, facturas_pendientes, ventas, comisiones, abonos, reportes, nomina, files  # Importar files
+from .routers import cajas, facturas, facturas_pendientes, ventas, comisiones, abonos, reportes, nomina, files, descuentos  # Importar files
 from .database import engine, Base
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -11,6 +11,7 @@ from .models import user, auth as auth_models, especialista, servicio, cliente, 
 from .models import producto as producto_models  # Nuevo módulo de productos e inventario
 from .models import caja as caja_models  # Módulo de caja
 from .models import abono as abono_models  # Módulo de abonos
+from .models import descuento as descuento_models  # Módulo de descuentos
 
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
@@ -118,6 +119,7 @@ app.include_router(abonos.router)
 app.include_router(reportes.router)
 app.include_router(nomina.router)
 app.include_router(files.router)  # Registrar router de archivos
+app.include_router(descuentos.router)
 
 @app.get("/")
 def read_root():

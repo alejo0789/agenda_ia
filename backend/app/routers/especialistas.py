@@ -16,7 +16,9 @@ from ..services.horario_service import HorarioService
 from ..services.bloqueo_service import BloqueoService
 from ..services.comision_especialista_service import ComisionEspecialistaService
 from ..services.disponibilidad_service import DisponibilidadService
-from ..dependencies import require_permission
+from ..services.permission_service import PermissionService
+from ..dependencies import require_permission, get_current_user
+from ..models import Usuario
 
 router = APIRouter(
     prefix="/api/especialistas",
@@ -181,12 +183,18 @@ def guardar_horarios_batch(
     id: int,
     horarios: HorariosBatchCreate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("especialistas.editar"))
+    current_user: Usuario = Depends(get_current_user)
 ):
     """
     BE-HOR-002: Guardar horarios (batch) - Reemplaza todos los horarios existentes
-    Permiso: especialistas.editar
+    Permiso: especialistas.editar O ser el mismo especialista
     """
+    is_admin = PermissionService.user_has_permission(db, current_user.id, "especialistas.editar")
+    is_self = current_user.especialista_id == id
+    
+    if not is_admin and not is_self:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "No tiene permiso")
+
     return HorarioService.create_batch(db, id, horarios.horarios)
 
 
@@ -195,12 +203,18 @@ def agregar_horario(
     id: int,
     horario: HorarioEspecialistaCreate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("especialistas.editar"))
+    current_user: Usuario = Depends(get_current_user)
 ):
     """
     BE-HOR-003: Agregar horario individual
-    Permiso: especialistas.editar
+    Permiso: especialistas.editar O ser el mismo especialista
     """
+    is_admin = PermissionService.user_has_permission(db, current_user.id, "especialistas.editar")
+    is_self = current_user.especialista_id == id
+    
+    if not is_admin and not is_self:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "No tiene permiso")
+
     return HorarioService.create(db, id, horario)
 
 
@@ -209,12 +223,18 @@ def eliminar_horario(
     id: int,
     horario_id: int,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("especialistas.editar"))
+    current_user: Usuario = Depends(get_current_user)
 ):
     """
     BE-HOR-004: Eliminar horario
-    Permiso: especialistas.editar
+    Permiso: especialistas.editar O ser el mismo especialista
     """
+    is_admin = PermissionService.user_has_permission(db, current_user.id, "especialistas.editar")
+    is_self = current_user.especialista_id == id
+    
+    if not is_admin and not is_self:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "No tiene permiso")
+
     HorarioService.delete(db, horario_id)
     return None
 
@@ -241,12 +261,18 @@ def crear_bloqueo(
     id: int,
     bloqueo: BloqueoEspecialistaCreate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("especialistas.editar"))
+    current_user: Usuario = Depends(get_current_user)
 ):
     """
     BE-BLQ-002: Crear bloqueo
-    Permiso: especialistas.editar
+    Permiso: especialistas.editar O ser el mismo especialista
     """
+    is_admin = PermissionService.user_has_permission(db, current_user.id, "especialistas.editar")
+    is_self = current_user.especialista_id == id
+    
+    if not is_admin and not is_self:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "No tiene permiso")
+
     return BloqueoService.create(db, id, bloqueo)
 
 
@@ -256,12 +282,18 @@ def actualizar_bloqueo(
     bloqueo_id: int,
     bloqueo: BloqueoEspecialistaUpdate,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("especialistas.editar"))
+    current_user: Usuario = Depends(get_current_user)
 ):
     """
     BE-BLQ-003: Actualizar bloqueo
-    Permiso: especialistas.editar
+    Permiso: especialistas.editar O ser el mismo especialista
     """
+    is_admin = PermissionService.user_has_permission(db, current_user.id, "especialistas.editar")
+    is_self = current_user.especialista_id == id
+    
+    if not is_admin and not is_self:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "No tiene permiso")
+
     return BloqueoService.update(db, bloqueo_id, bloqueo)
 
 
@@ -270,12 +302,18 @@ def eliminar_bloqueo(
     id: int,
     bloqueo_id: int,
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("especialistas.editar"))
+    current_user: Usuario = Depends(get_current_user)
 ):
     """
     BE-BLQ-004: Eliminar bloqueo
-    Permiso: especialistas.editar
+    Permiso: especialistas.editar O ser el mismo especialista
     """
+    is_admin = PermissionService.user_has_permission(db, current_user.id, "especialistas.editar")
+    is_self = current_user.especialista_id == id
+    
+    if not is_admin and not is_self:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "No tiene permiso")
+
     BloqueoService.delete(db, bloqueo_id)
     return None
 

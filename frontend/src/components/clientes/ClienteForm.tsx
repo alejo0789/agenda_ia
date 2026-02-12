@@ -44,6 +44,7 @@ const initialFormData: ClienteFormData = {
     fecha_nacimiento: '',
     direccion: '',
     notas: '',
+    es_colaborador: false,
 };
 
 export default function ClienteForm({
@@ -71,6 +72,7 @@ export default function ClienteForm({
                 fecha_nacimiento: clienteToEdit.fecha_nacimiento || '',
                 direccion: clienteToEdit.direccion || '',
                 notas: clienteToEdit.notas || '',
+                es_colaborador: clienteToEdit.es_colaborador || false,
             });
         } else {
             setFormData(initialFormData);
@@ -83,8 +85,13 @@ export default function ClienteForm({
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        const { name, value, type } = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
+
+        setFormData((prev) => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
 
         // Limpiar error del campo
         if (errors[name as keyof ClienteFormData]) {
@@ -147,6 +154,7 @@ export default function ClienteForm({
                     fecha_nacimiento: formData.fecha_nacimiento || undefined,
                     direccion: formData.direccion?.trim() || undefined,
                     notas: formData.notas?.trim() || undefined,
+                    es_colaborador: formData.es_colaborador,
                 };
                 await updateCliente(clienteToEdit.id, updateData);
             } else {
@@ -159,6 +167,7 @@ export default function ClienteForm({
                     fecha_nacimiento: formData.fecha_nacimiento || undefined,
                     direccion: formData.direccion?.trim() || undefined,
                     notas: formData.notas?.trim() || undefined,
+                    es_colaborador: formData.es_colaborador,
                 };
                 await createCliente(createData);
             }
@@ -282,6 +291,20 @@ export default function ClienteForm({
                             {errors.cedula && (
                                 <p className="mt-1 text-xs text-red-500">{errors.cedula}</p>
                             )}
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="es_colaborador"
+                                name="es_colaborador"
+                                checked={formData.es_colaborador}
+                                onChange={handleChange}
+                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <label htmlFor="es_colaborador" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Es Colega/Colaborador
+                            </label>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

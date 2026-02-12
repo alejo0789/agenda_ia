@@ -161,7 +161,7 @@ class ProductoBase(BaseModel):
     codigo: Optional[str] = Field(None, max_length=50, description="Código SKU interno")
     codigo_barras: Optional[str] = Field(None, max_length=100, description="Código de barras")
     descripcion: Optional[str] = Field(None, description="Descripción del producto")
-    precio_compra: Decimal = Field(default=Decimal("0"), ge=0, description="Precio de compra")
+    precio_compra: Optional[Decimal] = Field(default=Decimal("0"), ge=0, description="Precio de compra (opcional)")
     precio_venta: Decimal = Field(default=Decimal("0"), ge=0, description="Precio de venta al cliente")
     precio_colaborador: Optional[Decimal] = Field(default=Decimal("0"), ge=0, description="Precio de venta para colaboradores/empleados")
     comision_porcentaje: Optional[Decimal] = Field(default=Decimal("0"), ge=0, le=100, description="Porcentaje de comisión por venta (0-100)")
@@ -259,6 +259,7 @@ class ProductoListResponse(BaseModel):
     nombre: str
     precio_compra: Decimal
     precio_venta: Decimal
+    precio_colaborador: Optional[Decimal] = None
     stock_total: int = 0
     stock_minimo: int
     estado: str
