@@ -13,7 +13,8 @@ from datetime import date, timedelta
 
 from ..database import get_db
 from ..services.comision_service import ComisionService
-from ..dependencies import require_permission
+from ..dependencies import require_permission, get_current_user
+from ..services.permission_service import PermissionService
 
 router = APIRouter(
     prefix="/api/comisiones",
@@ -65,13 +66,27 @@ def comisiones_especialista(
     fecha_desde: Optional[date] = Query(None, description="Fecha inicio (default: inicio del mes)"),
     fecha_hasta: Optional[date] = Query(None, description="Fecha fin (default: hoy)"),
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("caja.ver"))
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Obtener comisiones de un especialista por período.
     
-    Por defecto retorna comisiones del mes actual.
+    Permite acceso si:
+    1. El usuario tiene permiso 'caja.ver' (Admin/Cajero)
+    2. El usuario es el mismo especialista que consulta
     """
+    from ..models.especialista import Especialista
+    from ..services.permission_service import PermissionService
+
+    # Verificar permisos
+    has_permission = PermissionService.user_has_permission(db, current_user.id, "caja.ver")
+    is_own_profile = current_user.especialista_id == especialista_id
+    
+    if not has_permission and not is_own_profile:
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene permiso para ver comisiones de otro especialista"
+        )
     from ..models.especialista import Especialista
     
     especialista = db.query(Especialista).filter(Especialista.id == especialista_id).first()
