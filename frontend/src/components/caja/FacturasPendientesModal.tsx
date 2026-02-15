@@ -42,17 +42,23 @@ export default function FacturasPendientesModal({
     const [isLoading, setIsLoading] = useState(true);
     const [clientes, setClientes] = useState<ClienteConPendientes[]>([]);
     const [clienteExpandido, setClienteExpandido] = useState<number | null>(null);
+    const [fechaDesde, setFechaDesde] = useState(new Date().toISOString().split('T')[0]);
+    const [fechaHasta, setFechaHasta] = useState(new Date().toISOString().split('T')[0]);
 
     useEffect(() => {
         if (isOpen) {
             cargarPendientes();
         }
-    }, [isOpen]);
+    }, [isOpen, fechaDesde, fechaHasta]);
 
     const cargarPendientes = async () => {
         setIsLoading(true);
         try {
-            const response = await apiClient.get('/facturas-pendientes/resumen-por-cliente');
+            const params = new URLSearchParams();
+            if (fechaDesde) params.append('fecha_inicio', fechaDesde);
+            if (fechaHasta) params.append('fecha_fin', fechaHasta);
+
+            const response = await apiClient.get(`/facturas-pendientes/resumen-por-cliente?${params.toString()}`);
             setClientes(response.data || []);
         } catch (error) {
             console.error('Error cargando pendientes:', error);
@@ -98,8 +104,30 @@ export default function FacturasPendientesModal({
                     </button>
                 </div>
 
+                {/* Filtros de Fecha */}
+                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex gap-3">
+                    <div className="flex-1">
+                        <label className="text-xs text-gray-500 mb-1 block">Desde</label>
+                        <input
+                            type="date"
+                            className="w-full text-sm p-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                            value={fechaDesde}
+                            onChange={(e) => setFechaDesde(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex-1">
+                        <label className="text-xs text-gray-500 mb-1 block">Hasta</label>
+                        <input
+                            type="date"
+                            className="w-full text-sm p-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                            value={fechaHasta}
+                            onChange={(e) => setFechaHasta(e.target.value)}
+                        />
+                    </div>
+                </div>
+
                 {/* Contenido */}
-                <div className="p-4 max-h-[60vh] overflow-y-auto">
+                <div className="p-4 max-h-[55vh] overflow-y-auto">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
