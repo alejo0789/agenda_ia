@@ -15,6 +15,7 @@ import {
     Plus,
     Minus,
     FileText,
+    MapPin,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Producto, TipoMovimiento } from '@/types/inventario';
@@ -46,15 +47,23 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
     const [motivoSeleccionado, setMotivoSeleccionado] = useState('');
     const [motivoPersonalizado, setMotivoPersonalizado] = useState('');
     const [notas, setNotas] = useState('');
+    const [ubicacionId, setUbicacionId] = useState<number | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSaving, setIsSaving] = useState(false);
 
-    // Cargar ubicaciones (usaremos la primera por defecto)
+    // Cargar ubicaciones
     useEffect(() => {
-        if (isOpen && ubicaciones.length === 0) {
+        if (isOpen) {
             fetchUbicaciones();
         }
-    }, [isOpen, ubicaciones.length, fetchUbicaciones]);
+    }, [isOpen, fetchUbicaciones]);
+
+    // Establecer ubicación por defecto cuando se carguen
+    useEffect(() => {
+        if (ubicaciones.length > 0 && !ubicacionId) {
+            setUbicacionId(ubicaciones[0].id);
+        }
+    }, [ubicaciones, ubicacionId]);
 
     // Reset form when modal opens
     useEffect(() => {
@@ -64,9 +73,12 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
             setMotivoSeleccionado('');
             setMotivoPersonalizado('');
             setNotas('');
+            if (ubicaciones.length > 0) {
+                setUbicacionId(ubicaciones[0].id);
+            }
             setErrors({});
         }
-    }, [isOpen]);
+    }, [isOpen, ubicaciones]);
 
     const validate = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -83,7 +95,13 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
             newErrors.motivoPersonalizado = 'Debe especificar el motivo';
         }
 
+        if (!ubicacionId) {
+            newErrors.ubicacion = 'Debe seleccionar una ubicación';
+        }
+
         // Validar que no reste más de lo disponible
+        // Nota: Esto valida contra el stock TOTAL, lo ideal sería validar contra el stock de la ubicación
+        // pero por simplicidad y UX inmediata lo mantenemos así, el backend hará la validación final.
         if (tipoAjuste === 'restar') {
             const stockActual = producto?.stock_total ?? 0;
             if (cantidad > stockActual) {
@@ -98,7 +116,7 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!producto || !validate()) return;
+        if (!producto || !validate() || !ubicacionId) return;
 
         setIsSaving(true);
         try {
@@ -107,9 +125,6 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
                 : MOTIVOS_PREDEFINIDOS.find(m => m.value === motivoSeleccionado)?.label || motivoSeleccionado;
 
             const tipoMovimiento: TipoMovimiento = tipoAjuste === 'sumar' ? 'ajuste_positivo' : 'ajuste_negativo';
-
-            // Usar la primera ubicación disponible
-            const ubicacionId = ubicaciones.length > 0 ? ubicaciones[0].id : 1;
 
             await movimientosApi.create({
                 producto_id: producto.id,
@@ -127,7 +142,7 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
             onClose();
         } catch (error) {
             console.error('Error al ajustar stock:', error);
-            toast.error('Error al realizar el ajuste de stock');
+            toast.error('Error al realizar el ajuste de stock. Verifique la ubicación y el stock disponible.');
         } finally {
             setIsSaving(false);
         }
@@ -179,7 +194,7 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
                         <div className="p-6 space-y-5">
                             {/* Stock Actual */}
                             <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 text-center">
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Stock Actual</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Stock Actual (Total)</p>
                                 <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                                     {stockActual}
                                 </p>
@@ -237,6 +252,37 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
                                 </div>
                             </div>
 
+                            {/* Ubicación */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Ubicación de Referencia *
+                                </label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <select
+                                        value={ubicacionId || ''}
+                                        onChange={(e) => setUbicacionId(Number(e.target.value))}
+                                        className={cn(
+                                            'w-full pl-9 pr-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100',
+                                            errors.ubicacion ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                                        )}
+                                    >
+                                        <option value="">Seleccionar ubicación</option>
+                                        {ubicaciones.map((u) => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {errors.ubicacion && (
+                                    <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {errors.ubicacion}
+                                    </p>
+                                )}
+                            </div>
+
                             {/* Cantidad */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -281,7 +327,7 @@ export default function AjusteStockModal({ isOpen, onClose, producto, onSuccess 
                                     : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
                             )}>
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                                    Stock después del ajuste:
+                                    Stock total después del ajuste:
                                 </span>
                                 <span className={cn(
                                     'text-lg font-bold',

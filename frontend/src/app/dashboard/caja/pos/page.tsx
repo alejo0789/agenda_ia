@@ -672,6 +672,11 @@ export default function POSPage() {
                                     <Search className="w-10 h-10 mx-auto mb-2" />
                                     <p className="text-base font-bold">No se encontró nada</p>
                                     <p className="text-sm">Intenta con otra búsqueda</p>
+                                    {tabActiva === 'productos' && (
+                                        <p className="text-xs mt-2 text-amber-600 dark:text-amber-500 font-medium">
+                                            Nota: Los productos sin stock no se muestran
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </div>
