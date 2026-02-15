@@ -84,6 +84,7 @@ export default function MovimientosPage() {
 
     // Referencia general para el lote
     const [referenciaLote, setReferenciaLote] = useState('');
+    const [ubicacionId, setUbicacionId] = useState<number | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     // Cargar datos iniciales
@@ -91,6 +92,13 @@ export default function MovimientosPage() {
         fetchProductos();
         fetchUbicaciones();
     }, [fetchProductos, fetchUbicaciones]);
+
+    // Establecer ubicación inicial
+    useEffect(() => {
+        if (ubicaciones.length > 0 && !ubicacionId) {
+            setUbicacionId(ubicaciones[0].id);
+        }
+    }, [ubicaciones, ubicacionId]);
 
     // Cargar historial cuando se cambia a esa vista
     useEffect(() => {
@@ -204,7 +212,10 @@ export default function MovimientosPage() {
 
         setIsSaving(true);
         try {
-            const ubicacionId = ubicaciones.length > 0 ? ubicaciones[0].id : 1;
+            if (!ubicacionId) {
+                toast.error('Debe seleccionar una ubicación');
+                return;
+            }
 
             // Registrar cada movimiento
             const promesas = movimientosPendientes.map(mov => {
@@ -546,6 +557,21 @@ export default function MovimientosPage() {
                                     placeholder="Referencia del lote (opcional)"
                                     className="text-sm"
                                 />
+
+                                {/* Selector de Ubicación */}
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-gray-500">Ubicación</label>
+                                    <select
+                                        value={ubicacionId || ''}
+                                        onChange={(e) => setUbicacionId(Number(e.target.value))}
+                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-amber-500"
+                                    >
+                                        <option value="">Seleccionar ubicación</option>
+                                        {ubicaciones.map(u => (
+                                            <option key={u.id} value={u.id}>{u.nombre}</option>
+                                        ))}
+                                    </select>
+                                </div>
 
                                 <div className="flex gap-2">
                                     <Button

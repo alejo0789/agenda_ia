@@ -49,11 +49,19 @@ export default function ConteoFisicoPage() {
     const [fechaCorte, setFechaCorte] = useState(new Date().toISOString().split('T')[0]);
     const [isSaving, setIsSaving] = useState(false);
     const [sortBy, setSortBy] = useState<'nombre' | 'diferencia'>('nombre');
+    const [ubicacionId, setUbicacionId] = useState<number | null>(null);
 
     useEffect(() => {
         fetchProductos();
         fetchUbicaciones();
     }, [fetchProductos, fetchUbicaciones]);
+
+    // Establecer ubicación inicial
+    useEffect(() => {
+        if (ubicaciones.length > 0 && !ubicacionId) {
+            setUbicacionId(ubicaciones[0].id);
+        }
+    }, [ubicaciones, ubicacionId]);
 
     // Inicializar items de conteo cuando cargan los productos
     useEffect(() => {
@@ -183,7 +191,10 @@ export default function ConteoFisicoPage() {
 
         setIsSaving(true);
         try {
-            const ubicacionId = ubicaciones.length > 0 ? ubicaciones[0].id : 1;
+            if (!ubicacionId) {
+                toast.error('Debe seleccionar una ubicación');
+                return;
+            }
 
             // Crear ajustes para cada diferencia
             for (const item of itemsConDiferencia) {
@@ -332,6 +343,19 @@ export default function ConteoFisicoPage() {
                         />
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg border px-3 py-2">
+                            <span className="text-sm font-medium text-gray-500">Ubicación:</span>
+                            <select
+                                value={ubicacionId || ''}
+                                onChange={(e) => setUbicacionId(Number(e.target.value))}
+                                className="bg-transparent text-sm outline-none font-medium text-gray-900 dark:text-gray-100"
+                            >
+                                {ubicaciones.map(u => (
+                                    <option key={u.id} value={u.id}>{u.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <select
                             value={estadoFilter}
                             onChange={(e) => setEstadoFilter(e.target.value as typeof estadoFilter)}
