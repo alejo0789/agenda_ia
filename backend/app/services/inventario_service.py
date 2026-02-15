@@ -567,7 +567,8 @@ class MovimientoService:
             )
         
         # RN-001: Validar stock suficiente para decrementos
-        if tipo in TIPOS_DECREMENTO or tipo == 'transferencia':
+        # Modificación: Permitir stock negativo para ventas
+        if (tipo in TIPOS_DECREMENTO or tipo == 'transferencia') and tipo != 'venta':
             ubicacion_id = movimiento.ubicacion_origen_id
             stock_actual = InventarioService.get_stock(db, movimiento.producto_id, ubicacion_id)
             
