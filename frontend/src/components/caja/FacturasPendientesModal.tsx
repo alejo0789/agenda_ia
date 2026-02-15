@@ -42,6 +42,7 @@ export default function FacturasPendientesModal({
     const [isLoading, setIsLoading] = useState(true);
     const [clientes, setClientes] = useState<ClienteConPendientes[]>([]);
     const [clienteExpandido, setClienteExpandido] = useState<number | null>(null);
+    const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
     const [fechaDesde, setFechaDesde] = useState(new Date().toISOString().split('T')[0]);
     const [fechaHasta, setFechaHasta] = useState(new Date().toISOString().split('T')[0]);
 
@@ -60,6 +61,7 @@ export default function FacturasPendientesModal({
 
             const response = await apiClient.get(`/facturas-pendientes/resumen-por-cliente?${params.toString()}`);
             setClientes(response.data || []);
+            setSelectedClientId(null); // Reset selection on reload
         } catch (error) {
             console.error('Error cargando pendientes:', error);
             setClientes([]);
@@ -69,26 +71,39 @@ export default function FacturasPendientesModal({
     };
 
     const handleExpandirCliente = (cliente: ClienteConPendientes) => {
+        setSelectedClientId(cliente.cliente_id);
         setClienteExpandido(
             clienteExpandido === cliente.cliente_id ? null : cliente.cliente_id
         );
     };
 
-    const handleCargarAlCarrito = (cliente: ClienteConPendientes) => {
-        onCargarServicios(
-            { id: cliente.cliente_id, nombre: cliente.cliente_nombre },
-            cliente.servicios
-        );
-        onClose();
+    const handleCheckboxClick = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
+        setSelectedClientId(id);
+    };
+
+    const handleCargarSeleccionado = () => {
+        if (!selectedClientId) return;
+        const cliente = clientes.find(c => c.cliente_id === selectedClientId);
+
+        if (cliente) {
+            onCargarServicios(
+                { id: cliente.cliente_id, nombre: cliente.cliente_nombre },
+                cliente.servicios
+            );
+            onClose();
+        }
     };
 
     if (!isOpen) return null;
 
+    const selectedClientData = clientes.find(c => c.cliente_id === selectedClientId);
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden shadow-2xl">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-500 to-orange-500">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-500 to-orange-500 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                             <Clock className="w-5 h-5 text-white" />
@@ -111,7 +126,7 @@ export default function FacturasPendientesModal({
                 </div>
 
                 {/* Filtros de Fecha */}
-                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex gap-3">
+                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex gap-3 shrink-0">
                     <div className="flex-1">
                         <label className="text-xs text-gray-500 mb-1 block">Desde</label>
                         <input
@@ -133,7 +148,7 @@ export default function FacturasPendientesModal({
                 </div>
 
                 {/* Contenido */}
-                <div className="p-4 max-h-[55vh] overflow-y-auto">
+                <div className="p-4 flex-1 overflow-y-auto">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
@@ -154,13 +169,24 @@ export default function FacturasPendientesModal({
                             {clientes.map((cliente) => (
                                 <div
                                     key={cliente.cliente_id}
-                                    className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+                                    className={`border rounded-xl overflow-hidden transition-all ${selectedClientId === cliente.cliente_id
+                                            ? 'border-amber-500 dark:border-amber-500 ring-1 ring-amber-500/20'
+                                            : 'border-gray-200 dark:border-gray-700'
+                                        }`}
                                 >
                                     {/* Header del cliente */}
-                                    <button
+                                    <div
                                         onClick={() => handleExpandirCliente(cliente)}
-                                        className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                        className="w-full p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                                     >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedClientId === cliente.cliente_id}
+                                            onChange={() => { }} // Handled by div click or separate handler
+                                            onClick={(e) => handleCheckboxClick(e, cliente.cliente_id)}
+                                            className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                                        />
+
                                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-lg">
                                             {cliente.cliente_nombre.charAt(0)}
                                         </div>
@@ -185,13 +211,13 @@ export default function FacturasPendientesModal({
                                         </div>
                                         <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${clienteExpandido === cliente.cliente_id ? 'rotate-90' : ''
                                             }`} />
-                                    </button>
+                                    </div>
 
                                     {/* Detalle expandido */}
                                     {clienteExpandido === cliente.cliente_id && (
                                         <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
                                             {/* Lista de servicios */}
-                                            <div className="space-y-2 mb-4">
+                                            <div className="space-y-2">
                                                 {cliente.servicios.map((servicio) => (
                                                     <div
                                                         key={servicio.id}
@@ -211,15 +237,6 @@ export default function FacturasPendientesModal({
                                                     </div>
                                                 ))}
                                             </div>
-
-                                            {/* Botón cobrar */}
-                                            <button
-                                                onClick={() => handleCargarAlCarrito(cliente)}
-                                                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2"
-                                            >
-                                                <ShoppingCart className="w-5 h-5" />
-                                                Cargar al carrito y cobrar
-                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -229,12 +246,23 @@ export default function FacturasPendientesModal({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 shrink-0 flex gap-3">
                     <button
                         onClick={onClose}
-                        className="w-full py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        className="flex-1 py-3 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
                     >
-                        Cerrar
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={handleCargarSeleccionado}
+                        disabled={!selectedClientId}
+                        className="flex-[2] py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg disabled:shadow-none"
+                    >
+                        <ShoppingCart className="w-5 h-5" />
+                        {selectedClientData
+                            ? `Cargar ${selectedClientData.total_servicios} items (${formatPrecio(selectedClientData.total_monto)})`
+                            : 'Selecciona un cliente'
+                        }
                     </button>
                 </div>
             </div>
