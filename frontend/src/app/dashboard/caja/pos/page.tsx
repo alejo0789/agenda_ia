@@ -131,9 +131,11 @@ export default function POSPage() {
                 // Seleccionar especialista por defecto
                 if (isEspecialista && user?.especialista_id) {
                     setEspecialistaSeleccionado(user.especialista_id);
-                } else if (esps.length > 0) {
-                    setEspecialistaSeleccionado(esps[0].id);
                 }
+                // YA NO SELECCIONAMOS POR DEFECTO PARA CAJEROS/ADMINS
+                // else if (esps.length > 0) {
+                //     setEspecialistaSeleccionado(esps[0].id);
+                // }
             } catch (err) {
                 console.error('Error cargando datos:', err);
             } finally {
@@ -782,33 +784,7 @@ export default function POSPage() {
                     )}
                 </div>
 
-                {/* Cliente Selector con enfoque móvil */}
-                <div className="p-2 border-b border-gray-100 dark:border-gray-800">
-                    <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Cliente Obligatorio</p>
-                    <ClienteSelector
-                        value={clienteId ? { id: clienteId, nombre: clienteNombre || '' } : null}
-                        onChange={(cliente) => setCliente(cliente?.id || null, cliente?.nombre || null, cliente?.es_colaborador)}
-                        required={true}
-                    />
-                    <div className="mt-1">
-                        <ClienteAbonoBanner clienteId={clienteId} />
-                    </div>
 
-                    {/* Toggle Precio Colaborador */}
-                    {clienteId && (
-                        <div className="mt-2 flex items-center justify-between bg-purple-50 dark:bg-purple-900/10 p-2 rounded-lg border border-purple-100 dark:border-purple-800/30">
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">Precio Colaborador</span>
-                                <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70">Aplicar precios especiales</span>
-                            </div>
-                            <Switch
-                                checked={aplicarPrecioColaborador}
-                                onCheckedChange={togglePrecioColaborador}
-                                className="scale-75 origin-right"
-                            />
-                        </div>
-                    )}
-                </div>
 
                 {/* Lista de Items del Carrito */}
                 <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-gray-50/30 dark:bg-gray-900/30">
