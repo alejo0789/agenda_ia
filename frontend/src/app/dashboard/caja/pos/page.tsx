@@ -101,6 +101,10 @@ export default function POSPage() {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [clienteInfoForPhoto, setClienteInfoForPhoto] = useState<{ id: number; nombre: string; telefono?: string } | null>(null);
 
+    // Ancho del panel del carrito (resizable)
+    const [cartWidth, setCartWidth] = useState(384); // w-96 default
+    const [isResizing, setIsResizing] = useState(false);
+
     useEffect(() => {
         const cargarDatos = async () => {
             setIsLoadingData(true);
@@ -503,6 +507,31 @@ export default function POSPage() {
         );
     }
 
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isResizing) {
+                const newWidth = window.innerWidth - e.clientX;
+                if (newWidth > 300 && newWidth < 800) {
+                    setCartWidth(newWidth);
+                }
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing]);
+
     return (
         <div className="h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col lg:flex-row gap-2 relative">
             {/* Panel izquierdo - Header + Catálogo */}
@@ -646,7 +675,7 @@ export default function POSPage() {
                                                 {item.nombre}
                                             </p>
                                         </div>
-                                        <div className="mt-1 flex items-center gap-1.5">
+                                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                                             <span className={`text-base font-black ${tabActiva === 'servicios' ? 'text-emerald-600' : 'text-purple-600'}`}>
                                                 {formatPrecio(tabActiva === 'servicios'
                                                     ? (item as Servicio).precio_base
@@ -656,6 +685,11 @@ export default function POSPage() {
                                             {'duracion_minutos' in item && (
                                                 <span className="text-[9px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
                                                     {item.duracion_minutos} MIN
+                                                </span>
+                                            )}
+                                            {tabActiva === 'productos' && (item as typeof productos[0]).stock_total !== undefined && (item as typeof productos[0]).stock_total! <= 0 && (
+                                                <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded-md uppercase tracking-wider border border-red-100 dark:border-red-900/30">
+                                                    Sin Stock
                                                 </span>
                                             )}
                                         </div>
@@ -704,8 +738,20 @@ export default function POSPage() {
                 </div>
             </div>
 
-            {/* Panel derecho - Carrito */}
-            <div className={`flex-1 lg:flex-none lg:w-80 xl:w-96 flex flex-col bg-white dark:bg-gray-900 lg:rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden ${mobileView === 'catalog' ? 'hidden lg:flex' : 'flex'}`}>
+            {/* Panel derecho - Carrito Resizable */}
+            <div
+                className={`flex-1 lg:flex-none flex flex-col bg-white dark:bg-gray-900 lg:rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden relative ${mobileView === 'catalog' ? 'hidden lg:flex' : 'flex'}`}
+                style={{ width: mobileView === 'cart' ? '100%' : window.innerWidth >= 1024 ? `${cartWidth}px` : '100%' }}
+            >
+                {/* Resize Handle - Solo Desktop */}
+                <div
+                    className="hidden lg:block absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-emerald-500 transition-colors z-50"
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        setIsResizing(true);
+                    }}
+                />
+
                 {/* Header Carrito / Botón Volver en móvil */}
                 <div className="p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between">
                     <div className="flex items-center gap-2">
