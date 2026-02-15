@@ -144,6 +144,32 @@ export default function POSPage() {
         cargarDatos();
     }, [fetchCajaActual, fetchMetodosPago, fetchProductos, isEspecialista, user?.especialista_id]);
 
+    // Lógica de resizable panel
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isResizing) {
+                const newWidth = window.innerWidth - e.clientX;
+                if (newWidth > 300 && newWidth < 800) {
+                    setCartWidth(newWidth);
+                }
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing]);
+
     const searchParams = useSearchParams();
     const editarFacturaId = searchParams.get('editar_factura');
     const { fetchFactura } = useFacturaStore();
@@ -507,30 +533,7 @@ export default function POSPage() {
         );
     }
 
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isResizing) {
-                const newWidth = window.innerWidth - e.clientX;
-                if (newWidth > 300 && newWidth < 800) {
-                    setCartWidth(newWidth);
-                }
-            }
-        };
 
-        const handleMouseUp = () => {
-            setIsResizing(false);
-        };
-
-        if (isResizing) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isResizing]);
 
     return (
         <div className="h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col lg:flex-row gap-2 relative">
