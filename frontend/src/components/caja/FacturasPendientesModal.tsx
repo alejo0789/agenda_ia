@@ -44,7 +44,6 @@ export default function FacturasPendientesModal({
     const [clienteExpandido, setClienteExpandido] = useState<number | null>(null);
     const [fechaDesde, setFechaDesde] = useState(new Date().toISOString().split('T')[0]);
     const [fechaHasta, setFechaHasta] = useState(new Date().toISOString().split('T')[0]);
-    const [selectedServices, setSelectedServices] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (isOpen) {
@@ -70,34 +69,15 @@ export default function FacturasPendientesModal({
     };
 
     const handleExpandirCliente = (cliente: ClienteConPendientes) => {
-        if (clienteExpandido === cliente.cliente_id) {
-            setClienteExpandido(null);
-            setSelectedServices(new Set());
-        } else {
-            setClienteExpandido(cliente.cliente_id);
-            // Seleccionar todos por defecto
-            const ids = new Set(cliente.servicios.map(s => s.id));
-            setSelectedServices(ids);
-        }
-    };
-
-    const toggleService = (id: number) => {
-        const newSelected = new Set(selectedServices);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedServices(newSelected);
+        setClienteExpandido(
+            clienteExpandido === cliente.cliente_id ? null : cliente.cliente_id
+        );
     };
 
     const handleCargarAlCarrito = (cliente: ClienteConPendientes) => {
-        const serviciosSeleccionados = cliente.servicios.filter(s => selectedServices.has(s.id));
-        if (serviciosSeleccionados.length === 0) return;
-
         onCargarServicios(
             { id: cliente.cliente_id, nombre: cliente.cliente_nombre },
-            serviciosSeleccionados
+            cliente.servicios
         );
         onClose();
     };
@@ -215,28 +195,19 @@ export default function FacturasPendientesModal({
                                                 {cliente.servicios.map((servicio) => (
                                                     <div
                                                         key={servicio.id}
-                                                        className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                                        onClick={() => toggleService(servicio.id)}
+                                                        className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg"
                                                     >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedServices.has(servicio.id)}
-                                                            onChange={() => { }} // Handled by parent div
-                                                            className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                                                        />
-                                                        <div className="flex-1 flex justify-between items-center">
-                                                            <div>
-                                                                <p className="font-medium text-gray-900 dark:text-white text-sm">
-                                                                    {servicio.servicio_nombre}
-                                                                </p>
-                                                                <p className="text-xs text-gray-500">
-                                                                    {servicio.especialista_nombre} • {new Date(servicio.fecha_creacion).toLocaleDateString('es-CO')}
-                                                                </p>
-                                                            </div>
-                                                            <p className="font-semibold text-amber-600">
-                                                                {formatPrecio(servicio.servicio_precio * (servicio.cantidad || 1))}
+                                                        <div>
+                                                            <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                                                {servicio.servicio_nombre}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {servicio.especialista_nombre} • {new Date(servicio.fecha_creacion).toLocaleDateString('es-CO')}
                                                             </p>
                                                         </div>
+                                                        <p className="font-semibold text-amber-600">
+                                                            {formatPrecio(servicio.servicio_precio * (servicio.cantidad || 1))}
+                                                        </p>
                                                     </div>
                                                 ))}
                                             </div>
@@ -244,15 +215,10 @@ export default function FacturasPendientesModal({
                                             {/* Botón cobrar */}
                                             <button
                                                 onClick={() => handleCargarAlCarrito(cliente)}
-                                                disabled={selectedServices.size === 0}
-                                                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2"
                                             >
                                                 <ShoppingCart className="w-5 h-5" />
-                                                Cargar {selectedServices.size} items ({formatPrecio(
-                                                    cliente.servicios
-                                                        .filter(s => selectedServices.has(s.id))
-                                                        .reduce((sum, s) => sum + (s.servicio_precio * (s.cantidad || 1)), 0)
-                                                )})
+                                                Cargar al carrito y cobrar
                                             </button>
                                         </div>
                                     )}
