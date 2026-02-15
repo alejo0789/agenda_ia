@@ -209,8 +209,7 @@ export default function POSPage() {
         )
         : productos.filter(p =>
             p.nombre.toLowerCase().includes(busqueda.toLowerCase()) &&
-            p.estado === 'activo' &&
-            (p.stock_total ?? 0) > 0
+            p.estado === 'activo'
         );
 
     const handleAgregarItem = (tipo: 'servicio' | 'producto', item: Servicio | typeof productos[0]) => {
@@ -674,7 +673,7 @@ export default function POSPage() {
                                     <p className="text-sm">Intenta con otra búsqueda</p>
                                     {tabActiva === 'productos' && (
                                         <p className="text-xs mt-2 text-amber-600 dark:text-amber-500 font-medium">
-                                            Nota: Los productos sin stock no se muestran
+
                                         </p>
                                     )}
                                 </div>
