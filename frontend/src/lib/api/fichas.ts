@@ -7,7 +7,7 @@ import { apiClient } from './client';
 export interface CampoFicha {
     id?: number;
     nombre: string;
-    tipo: 'texto_corto' | 'texto_largo' | 'numero' | 'opcion_multiple' | 'casillas' | 'fecha';
+    tipo: 'texto_corto' | 'texto_largo' | 'numero' | 'opcion_multiple' | 'casillas' | 'fecha' | 'informativo';
     opciones?: string; // Separadas por coma
     requerido: boolean;
     orden: number;

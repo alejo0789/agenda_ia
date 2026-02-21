@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Save, GripVertical, Settings2, HelpCircle } from 'lucide-react';
+import { X, Plus, Trash2, Save, GripVertical, Settings2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fichasApi, PlantillaFicha, CampoFicha, PlantillaFichaCreate } from '@/lib/api/fichas';
 import { toast } from 'sonner';
@@ -14,12 +14,13 @@ interface Props {
 }
 
 const TIPOS_CAMPO = [
-    { value: 'texto_corto', label: 'Respuesta Corta' },
-    { value: 'texto_largo', label: 'Párrafo Largo' },
-    { value: 'numero', label: 'Número' },
-    { value: 'opcion_multiple', label: 'Selección Múltiple (Radio)' },
-    { value: 'casillas', label: 'Casillas de Verificación (Checkboxes)' },
-    { value: 'fecha', label: 'Fecha' },
+    { value: 'texto_corto', label: 'Respuesta Corta', icon: '📝' },
+    { value: 'texto_largo', label: 'Párrafo Largo', icon: '📄' },
+    { value: 'numero', label: 'Número', icon: '🔢' },
+    { value: 'opcion_multiple', label: 'Selección Múltiple (Radio)', icon: '⭕' },
+    { value: 'casillas', label: 'Casillas de Verificación (Checkboxes)', icon: '☑️' },
+    { value: 'fecha', label: 'Fecha', icon: '📅' },
+    { value: 'informativo', label: 'Texto Informativo (Sin respuesta)', icon: 'ℹ️' },
 ];
 
 export function CreadorPlantillaModal({ isOpen, onClose, onSuccess, initialData }: Props) {
@@ -256,18 +257,41 @@ export function CreadorPlantillaModal({ isOpen, onClose, onSuccess, initialData 
                                                         />
                                                     </div>
                                                 )}
+                                                {campo.tipo === 'informativo' && (
+                                                    <div className="space-y-2">
+                                                        <label className="block text-xs font-semibold text-gray-700 flex items-center gap-1">
+                                                            <Info className="w-3 h-3" />
+                                                            Texto informativo visible para el cliente:
+                                                        </label>
+                                                        <textarea
+                                                            placeholder="Escribe aquí el texto que verá el cliente (instrucciones, consejos, advertencias...)"
+                                                            value={campo.opciones || ''}
+                                                            onChange={(e) => handleCampoChange(index, { opciones: e.target.value })}
+                                                            rows={3}
+                                                            className="w-full px-3 py-2 border border-blue-200 rounded-lg bg-blue-50/50 text-gray-700 focus:border-blue-400 focus:ring-blue-300 resize-none text-sm"
+                                                        />
+                                                        <p className="text-xs text-blue-500">Este bloque no requiere respuesta. Se mostrará como texto resaltado en azul para el cliente.</p>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="flex justify-between items-center pt-2 mt-4 border-t border-gray-100">
-                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={campo.requerido}
-                                                        onChange={(e) => handleCampoChange(index, { requerido: e.target.checked })}
-                                                        className="rounded text-emerald-600 focus:ring-emerald-500"
-                                                    />
-                                                    <span className="text-sm text-gray-600 font-medium">Obligatorio</span>
-                                                </label>
+                                                {campo.tipo !== 'informativo' ? (
+                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={campo.requerido}
+                                                            onChange={(e) => handleCampoChange(index, { requerido: e.target.checked })}
+                                                            className="rounded text-emerald-600 focus:ring-emerald-500"
+                                                        />
+                                                        <span className="text-sm text-gray-600 font-medium">Obligatorio</span>
+                                                    </label>
+                                                ) : (
+                                                    <span className="flex items-center gap-1.5 text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded-full">
+                                                        <Info className="w-3 h-3" />
+                                                        Bloque informativo - sin respuesta
+                                                    </span>
+                                                )}
 
                                                 {!isEditing && (
                                                     <button

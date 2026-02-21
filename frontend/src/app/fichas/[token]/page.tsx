@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { fichasApi } from '@/lib/api/fichas';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 export default function FichaPublicaPage() {
     const params = useParams();
@@ -158,104 +158,123 @@ export default function FichaPublicaPage() {
                     </div>
 
                     {/* Campos */}
-                    {plantilla.campos.sort((a: any, b: any) => a.orden - b.orden).map((campo: any) => (
-                        <div key={campo.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 transition-all hover:shadow-md">
-                            <label className="block text-lg font-semibold text-gray-900 dark:text-white mb-4 leading-snug">
-                                {campo.nombre} {campo.requerido && <span className="text-red-500">*</span>}
-                            </label>
-
-                            <div className="mt-2">
-                                {campo.tipo === 'texto_corto' && (
-                                    <input
-                                        type="text"
-                                        required={campo.requerido}
-                                        value={respuestas[campo.id] || ''}
-                                        onChange={(e) => handleInputChange(campo.id, e.target.value)}
-                                        placeholder="Tu respuesta"
-                                        className="w-full md:w-2/3 border-b-2 border-gray-200 dark:border-gray-700 bg-transparent py-3 text-lg outline-none focus:border-emerald-500 transition-colors dark:text-white"
-                                    />
-                                )}
-
-                                {campo.tipo === 'texto_largo' && (
-                                    <textarea
-                                        required={campo.requerido}
-                                        value={respuestas[campo.id] || ''}
-                                        onChange={(e) => handleInputChange(campo.id, e.target.value)}
-                                        placeholder="Tu respuesta"
-                                        rows={3}
-                                        className="w-full border-b-2 border-gray-200 dark:border-gray-700 bg-transparent py-3 text-lg outline-none focus:border-emerald-500 transition-colors resize-none dark:text-white"
-                                    />
-                                )}
-
-                                {campo.tipo === 'numero' && (
-                                    <input
-                                        type="number"
-                                        required={campo.requerido}
-                                        value={respuestas[campo.id] || ''}
-                                        onChange={(e) => handleInputChange(campo.id, e.target.value)}
-                                        placeholder="0"
-                                        className="w-full md:w-1/3 border-b-2 border-gray-200 dark:border-gray-700 bg-transparent py-3 text-lg outline-none focus:border-emerald-500 transition-colors dark:text-white"
-                                    />
-                                )}
-
-                                {campo.tipo === 'fecha' && (
-                                    <input
-                                        type="date"
-                                        required={campo.requerido}
-                                        value={respuestas[campo.id] || ''}
-                                        onChange={(e) => handleInputChange(campo.id, e.target.value)}
-                                        className="w-full md:w-1/3 border-b-2 border-gray-200 dark:border-gray-700 bg-transparent py-3 text-lg outline-none focus:border-emerald-500 transition-colors dark:text-white"
-                                    />
-                                )}
-
-                                {campo.tipo === 'opcion_multiple' && (
-                                    <div className="space-y-4 pt-2">
-                                        {campo.opciones.map((opcion: string, i: number) => (
-                                            <label key={i} className="flex items-center gap-4 cursor-pointer group">
-                                                <div className="relative flex items-center justify-center">
-                                                    <input
-                                                        type="radio"
-                                                        name={`campo-${campo.id}`}
-                                                        required={campo.requerido}
-                                                        checked={respuestas[campo.id] === opcion.trim()}
-                                                        onChange={() => handleInputChange(campo.id, opcion.trim())}
-                                                        className="peer appearance-none w-6 h-6 border-2 border-gray-300 dark:border-gray-600 rounded-full checked:border-emerald-500 transition-all"
-                                                    />
-                                                    <div className="absolute w-3 h-3 bg-emerald-500 rounded-full opacity-0 peer-checked:opacity-100 transition-all" />
-                                                </div>
-                                                <span className="text-gray-700 dark:text-gray-300 text-lg group-hover:text-emerald-600 transition-colors">
-                                                    {opcion.trim()}
-                                                </span>
-                                            </label>
-                                        ))}
+                    {plantilla.campos.sort((a: any, b: any) => a.orden - b.orden).map((campo: any) => {
+                        // Bloque informativo: tarjeta azul sin input
+                        if (campo.tipo === 'informativo') {
+                            return (
+                                <div key={campo.id} className="flex gap-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 shadow-sm">
+                                    <Info className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        {campo.nombre && (
+                                            <p className="font-semibold text-blue-800 dark:text-blue-300 text-base mb-1">{campo.nombre}</p>
+                                        )}
+                                        {campo.opciones && (
+                                            <p className="text-blue-700 dark:text-blue-400 whitespace-pre-wrap text-sm leading-relaxed">{campo.opciones}</p>
+                                        )}
                                     </div>
-                                )}
+                                </div>
+                            );
+                        }
 
-                                {campo.tipo === 'casillas' && (
-                                    <div className="space-y-4 pt-2">
-                                        {campo.opciones.map((opcion: string, i: number) => (
-                                            <label key={i} className="flex items-center gap-4 cursor-pointer group">
-                                                <div className="relative flex items-center justify-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={(respuestas[campo.id] || '').split(',').map(o => o.trim()).includes(opcion.trim())}
-                                                        onChange={(e) => handleCheckboxChange(campo.id, opcion.trim(), e.target.checked)}
-                                                        className="peer appearance-none w-6 h-6 border-2 border-gray-300 dark:border-gray-600 rounded-md checked:bg-emerald-500 checked:border-emerald-500 transition-all font-sans"
-                                                    />
-                                                    <svg className="absolute w-4 h-4 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                </div>
-                                                <span className="text-gray-700 dark:text-gray-300 text-lg group-hover:text-emerald-600 transition-colors">
-                                                    {opcion.trim()}
-                                                </span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
+                        return (
+                            <div key={campo.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 transition-all hover:shadow-md">
+                                <label className="block text-lg font-semibold text-gray-900 dark:text-white mb-4 leading-snug">
+                                    {campo.nombre} {campo.requerido && <span className="text-red-500">*</span>}
+                                </label>
+
+                                <div className="mt-2">
+                                    {campo.tipo === 'texto_corto' && (
+                                        <input
+                                            type="text"
+                                            required={campo.requerido}
+                                            value={respuestas[campo.id] || ''}
+                                            onChange={(e) => handleInputChange(campo.id, e.target.value)}
+                                            placeholder="Tu respuesta"
+                                            className="w-full md:w-2/3 border-b-2 border-gray-200 dark:border-gray-700 bg-transparent py-3 text-lg outline-none focus:border-emerald-500 transition-colors dark:text-white"
+                                        />
+                                    )}
+
+                                    {campo.tipo === 'texto_largo' && (
+                                        <textarea
+                                            required={campo.requerido}
+                                            value={respuestas[campo.id] || ''}
+                                            onChange={(e) => handleInputChange(campo.id, e.target.value)}
+                                            placeholder="Tu respuesta"
+                                            rows={3}
+                                            className="w-full border-b-2 border-gray-200 dark:border-gray-700 bg-transparent py-3 text-lg outline-none focus:border-emerald-500 transition-colors resize-none dark:text-white"
+                                        />
+                                    )}
+
+                                    {campo.tipo === 'numero' && (
+                                        <input
+                                            type="number"
+                                            required={campo.requerido}
+                                            value={respuestas[campo.id] || ''}
+                                            onChange={(e) => handleInputChange(campo.id, e.target.value)}
+                                            placeholder="0"
+                                            className="w-full md:w-1/3 border-b-2 border-gray-200 dark:border-gray-700 bg-transparent py-3 text-lg outline-none focus:border-emerald-500 transition-colors dark:text-white"
+                                        />
+                                    )}
+
+                                    {campo.tipo === 'fecha' && (
+                                        <input
+                                            type="date"
+                                            required={campo.requerido}
+                                            value={respuestas[campo.id] || ''}
+                                            onChange={(e) => handleInputChange(campo.id, e.target.value)}
+                                            className="w-full md:w-1/3 border-b-2 border-gray-200 dark:border-gray-700 bg-transparent py-3 text-lg outline-none focus:border-emerald-500 transition-colors dark:text-white"
+                                        />
+                                    )}
+
+                                    {campo.tipo === 'opcion_multiple' && (
+                                        <div className="space-y-4 pt-2">
+                                            {campo.opciones.map((opcion: string, i: number) => (
+                                                <label key={i} className="flex items-center gap-4 cursor-pointer group">
+                                                    <div className="relative flex items-center justify-center">
+                                                        <input
+                                                            type="radio"
+                                                            name={`campo-${campo.id}`}
+                                                            required={campo.requerido}
+                                                            checked={respuestas[campo.id] === opcion.trim()}
+                                                            onChange={() => handleInputChange(campo.id, opcion.trim())}
+                                                            className="peer appearance-none w-6 h-6 border-2 border-gray-300 dark:border-gray-600 rounded-full checked:border-emerald-500 transition-all"
+                                                        />
+                                                        <div className="absolute w-3 h-3 bg-emerald-500 rounded-full opacity-0 peer-checked:opacity-100 transition-all" />
+                                                    </div>
+                                                    <span className="text-gray-700 dark:text-gray-300 text-lg group-hover:text-emerald-600 transition-colors">
+                                                        {opcion.trim()}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {campo.tipo === 'casillas' && (
+                                        <div className="space-y-4 pt-2">
+                                            {campo.opciones.map((opcion: string, i: number) => (
+                                                <label key={i} className="flex items-center gap-4 cursor-pointer group">
+                                                    <div className="relative flex items-center justify-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(respuestas[campo.id] || '').split(',').map(o => o.trim()).includes(opcion.trim())}
+                                                            onChange={(e) => handleCheckboxChange(campo.id, opcion.trim(), e.target.checked)}
+                                                            className="peer appearance-none w-6 h-6 border-2 border-gray-300 dark:border-gray-600 rounded-md checked:bg-emerald-500 checked:border-emerald-500 transition-all font-sans"
+                                                        />
+                                                        <svg className="absolute w-4 h-4 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </div>
+                                                    <span className="text-gray-700 dark:text-gray-300 text-lg group-hover:text-emerald-600 transition-colors">
+                                                        {opcion.trim()}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                     {/* Submit Button */}
                     <div className="flex flex-col items-center pt-8 gap-4">

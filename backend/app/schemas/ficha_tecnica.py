@@ -9,7 +9,7 @@ from pydantic.json_schema import SkipJsonSchema
 
 class CampoFichaBase(BaseModel):
     nombre: str
-    tipo: str = Field(..., description="texto_corto, texto_largo, numero, opcion_multiple, casillas, fecha")
+    tipo: str = Field(..., description="texto_corto, texto_largo, numero, opcion_multiple, casillas, fecha, informativo")
     opciones: Optional[str] = Field(None, description="Opciones separadas por coma si aplica")
     requerido: bool = False
     orden: int = 0

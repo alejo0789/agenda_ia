@@ -30,6 +30,7 @@ class TipoCampoFicha(str, enum.Enum):
     OPCION_MULTIPLE = "opcion_multiple"
     CASILLAS = "casillas"
     FECHA = "fecha"
+    INFORMATIVO = "informativo"  # Bloque de texto sin respuesta, solo lectura para el cliente
 
 class CampoFicha(Base):
     __tablename__ = "campos_fichas"

@@ -1,6 +1,6 @@
 'use client';
 
-import { X, CheckSquare, Circle, CalendarIcon, Type, AlignLeft, Hash } from 'lucide-react';
+import { X, CheckSquare, Circle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlantillaFicha } from '@/lib/api/fichas';
 
@@ -50,76 +50,95 @@ export function PrevisualizarFichaModal({ isOpen, onClose, plantilla }: Props) {
 
                         {/* Preguntas */}
                         {plantilla.campos && plantilla.campos.length > 0 ? (
-                            plantilla.campos.sort((a, b) => a.orden - b.orden).map((campo, idx) => (
-                                <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:p-8">
-                                    <div className="mb-4">
-                                        <label className="text-base font-medium text-gray-900 dark:text-white flex gap-1">
-                                            {campo.nombre}
-                                            {campo.requerido && <span className="text-red-500">*</span>}
-                                        </label>
-                                    </div>
-
-                                    {/* Renderizado de Inputs según Tipo */}
-                                    <div className="mt-2 text-gray-800 dark:text-gray-200">
-                                        {campo.tipo === 'texto_corto' && (
-                                            <input
-                                                type="text"
-                                                disabled
-                                                placeholder="Tu respuesta"
-                                                className="w-full md:w-1/2 border-b border-gray-300 dark:border-gray-600 bg-transparent py-2 outline-none focus:border-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed"
-                                            />
-                                        )}
-
-                                        {campo.tipo === 'texto_largo' && (
-                                            <textarea
-                                                disabled
-                                                placeholder="Tu respuesta"
-                                                rows={3}
-                                                className="w-full border-b border-gray-300 dark:border-gray-600 bg-transparent py-2 outline-none focus:border-emerald-500 resize-none disabled:opacity-70 disabled:cursor-not-allowed"
-                                            />
-                                        )}
-
-                                        {campo.tipo === 'numero' && (
-                                            <input
-                                                type="number"
-                                                disabled
-                                                placeholder="Solo números"
-                                                className="w-full md:w-1/3 border-b border-gray-300 dark:border-gray-600 bg-transparent py-2 outline-none focus:border-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed"
-                                            />
-                                        )}
-
-                                        {campo.tipo === 'fecha' && (
-                                            <input
-                                                type="date"
-                                                disabled
-                                                className="w-full md:w-1/3 border-b border-gray-300 dark:border-gray-600 bg-transparent py-2 outline-none focus:border-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed"
-                                            />
-                                        )}
-
-                                        {campo.tipo === 'opcion_multiple' && (
-                                            <div className="space-y-3">
-                                                {campo.opciones?.split(',').map((opt, i) => (
-                                                    <label key={i} className="flex items-center gap-3 cursor-not-allowed opacity-80">
-                                                        <Circle className="w-5 h-5 text-gray-300 dark:text-gray-600" />
-                                                        <span className="text-sm">{opt.trim()}</span>
-                                                    </label>
-                                                ))}
+                            plantilla.campos.sort((a, b) => a.orden - b.orden).map((campo, idx) => {
+                                // Bloque informativo: render sin tarjeta de pregunta
+                                if (campo.tipo === 'informativo') {
+                                    return (
+                                        <div key={idx} className="flex gap-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 rounded-xl p-6">
+                                            <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                {campo.nombre && (
+                                                    <p className="font-semibold text-blue-800 dark:text-blue-300 text-sm mb-1">{campo.nombre}</p>
+                                                )}
+                                                {campo.opciones && (
+                                                    <p className="text-blue-700 dark:text-blue-400 whitespace-pre-wrap text-sm leading-relaxed">{campo.opciones}</p>
+                                                )}
                                             </div>
-                                        )}
+                                        </div>
+                                    );
+                                }
 
-                                        {campo.tipo === 'casillas' && (
-                                            <div className="space-y-3">
-                                                {campo.opciones?.split(',').map((opt, i) => (
-                                                    <label key={i} className="flex items-center gap-3 cursor-not-allowed opacity-80">
-                                                        <CheckSquare className="w-5 h-5 text-gray-300 dark:text-gray-600" />
-                                                        <span className="text-sm">{opt.trim()}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        )}
+                                return (
+                                    <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:p-8">
+                                        <div className="mb-4">
+                                            <label className="text-base font-medium text-gray-900 dark:text-white flex gap-1">
+                                                {campo.nombre}
+                                                {campo.requerido && <span className="text-red-500">*</span>}
+                                            </label>
+                                        </div>
+
+                                        {/* Renderizado de Inputs según Tipo */}
+                                        <div className="mt-2 text-gray-800 dark:text-gray-200">
+                                            {campo.tipo === 'texto_corto' && (
+                                                <input
+                                                    type="text"
+                                                    disabled
+                                                    placeholder="Tu respuesta"
+                                                    className="w-full md:w-1/2 border-b border-gray-300 dark:border-gray-600 bg-transparent py-2 outline-none focus:border-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed"
+                                                />
+                                            )}
+
+                                            {campo.tipo === 'texto_largo' && (
+                                                <textarea
+                                                    disabled
+                                                    placeholder="Tu respuesta"
+                                                    rows={3}
+                                                    className="w-full border-b border-gray-300 dark:border-gray-600 bg-transparent py-2 outline-none focus:border-emerald-500 resize-none disabled:opacity-70 disabled:cursor-not-allowed"
+                                                />
+                                            )}
+
+                                            {campo.tipo === 'numero' && (
+                                                <input
+                                                    type="number"
+                                                    disabled
+                                                    placeholder="Solo números"
+                                                    className="w-full md:w-1/3 border-b border-gray-300 dark:border-gray-600 bg-transparent py-2 outline-none focus:border-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed"
+                                                />
+                                            )}
+
+                                            {campo.tipo === 'fecha' && (
+                                                <input
+                                                    type="date"
+                                                    disabled
+                                                    className="w-full md:w-1/3 border-b border-gray-300 dark:border-gray-600 bg-transparent py-2 outline-none focus:border-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed"
+                                                />
+                                            )}
+
+                                            {campo.tipo === 'opcion_multiple' && (
+                                                <div className="space-y-3">
+                                                    {campo.opciones?.split(',').map((opt, i) => (
+                                                        <label key={i} className="flex items-center gap-3 cursor-not-allowed opacity-80">
+                                                            <Circle className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                                                            <span className="text-sm">{opt.trim()}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {campo.tipo === 'casillas' && (
+                                                <div className="space-y-3">
+                                                    {campo.opciones?.split(',').map((opt, i) => (
+                                                        <label key={i} className="flex items-center gap-3 cursor-not-allowed opacity-80">
+                                                            <CheckSquare className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                                                            <span className="text-sm">{opt.trim()}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="text-center py-8 text-gray-500">
                                 Esta ficha no tiene preguntas todavía.
