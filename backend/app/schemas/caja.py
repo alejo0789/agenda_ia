@@ -88,8 +88,18 @@ class CajaList(BaseModel):
     monto_apertura: Decimal
     fecha_cierre: Optional[datetime] = None
     monto_cierre: Optional[Decimal] = None
+    total_efectivo_teorico: Optional[Decimal] = None
+    diferencia: Optional[Decimal] = None
+    usuario_apertura_nombre: Optional[str] = None
+    usuario_cierre_nombre: Optional[str] = None
     
     model_config = {"from_attributes": True}
+
+class CajaUpdate(BaseModel):
+    """Schema para actualizar montos de caja (admin)"""
+    monto_apertura: Optional[Decimal] = Field(None, ge=0)
+    monto_cierre: Optional[Decimal] = Field(None, ge=0)
+    notas: Optional[str] = None
 
 
 class CajaCuadre(BaseModel):

@@ -48,12 +48,12 @@ interface CalendarGridProps {
     isLoading: boolean;
 }
 
-// Generar rangos de tiempo de 6:00 AM a 10:00 PM en intervalos de 15 minutos
+// Generar rangos de tiempo de 6:00 AM a 7:00 PM en intervalos de 30 minutos
 const generateTimeSlots = () => {
     const slots = [];
-    for (let hour = 6; hour <= 22; hour++) {
-        for (let minute = 0; minute < 60; minute += 15) {
-            if (hour === 22 && minute > 0) break;
+    for (let hour = 6; hour <= 19; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+            if (hour === 19 && minute > 0) break;
             slots.push({
                 time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
                 label: minute === 0 ? `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}` : null
@@ -64,7 +64,8 @@ const generateTimeSlots = () => {
 };
 
 const TIME_SLOTS = generateTimeSlots();
-const SLOT_HEIGHT = 20;
+const SLOT_INTERVAL = 30;
+const SLOT_HEIGHT = 25;
 
 export function CalendarGrid({
     especialistas,
@@ -87,10 +88,10 @@ export function CalendarGrid({
         const hours = now.getHours();
         const minutes = now.getMinutes();
 
-        if (hours < 6 || hours > 22) return null;
+        if (hours < 6 || hours > 19) return null;
 
         const minutesSince6AM = (hours - 6) * 60 + minutes;
-        return minutesSince6AM * (SLOT_HEIGHT / 15);
+        return minutesSince6AM * (SLOT_HEIGHT / SLOT_INTERVAL);
     }, [selectedDate]);
 
     // Agrupar citas por especialista
@@ -275,8 +276,8 @@ export function CalendarGrid({
                             {citasPorEspecialista[especialista.id]?.map((cita) => {
                                 const [startHour, startMin] = cita.hora_inicio.split(':').map(Number);
                                 const minutesSince6AM = (startHour - 6) * 60 + startMin;
-                                const topPosition = minutesSince6AM * (SLOT_HEIGHT / 15);
-                                const height = cita.duracion * (SLOT_HEIGHT / 15);
+                                const topPosition = minutesSince6AM * (SLOT_HEIGHT / SLOT_INTERVAL);
+                                const height = cita.duracion * (SLOT_HEIGHT / SLOT_INTERVAL);
                                 const isDragging = draggedCita?.id === cita.id;
 
                                 return (

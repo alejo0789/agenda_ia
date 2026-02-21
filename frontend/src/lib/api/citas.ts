@@ -88,6 +88,14 @@ export interface CitaListItem {
     servicio_color?: string | null;
 }
 
+export interface NotificacionRequest {
+    phone: string;
+    name: string;
+    message: string;
+    agent_id?: string;
+    agent_name?: string;
+}
+
 // ============================================
 // API DE CITAS
 // ============================================
@@ -169,5 +177,12 @@ export const citasApi = {
     getByEspecialista: async (especialistaId: number, fecha: string): Promise<CitaListItem[]> => {
         const response = await apiClient.get(`/citas/especialista/${especialistaId}/fecha/${fecha}`);
         return response.data;
+    },
+
+    /**
+     * Enviar notificación por WhatsApp de la cita agendada
+     */
+    enviarNotificacion: async (data: NotificacionRequest): Promise<void> => {
+        await apiClient.post(`/citas/notificar`, data);
     }
 };

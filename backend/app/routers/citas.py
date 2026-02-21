@@ -7,7 +7,7 @@ from datetime import date
 from ..database import get_db
 from ..schemas.cita import (
     CitaCreate, CitaUpdate, CitaResponse, CitaListResponse, CitaCambiarEstado,
-    CitaAgenteRequest
+    CitaAgenteRequest, NotificacionRequest
 )
 from ..schemas.cliente import ClienteCreate
 from ..models.cliente import Cliente
@@ -17,6 +17,9 @@ from ..models.especialista import Especialista, EspecialistaServicio
 from ..services.cita_service import CitaService
 from ..services.cliente_service import ClienteService
 from ..dependencies import require_permission
+from ..config import settings
+import requests
+import json
 
 router = APIRouter(
     prefix="/api/citas",
@@ -325,3 +328,50 @@ def listar_citas_especialista(
     """
     citas = CitaService.get_by_especialista(db, especialista_id, fecha)
     return [CitaService.format_cita_list(c) for c in citas]
+
+
+@router.post("/notificar", status_code=status.HTTP_200_OK)
+def enviar_notificacion(
+    request: NotificacionRequest,
+    _: dict = Depends(require_permission("agenda.crear"))
+):
+    """
+    Enviar notificacion de WhatsApp mediante el servicio externo bot
+    Permiso: agenda.crear
+    """
+    url = f"{settings.webchat_backend.rstrip('/')}/send-message"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": settings.web_chat_security
+    }
+    
+    payload = {
+        "phone": request.phone,
+        "name": request.name,
+        "message": request.message,
+        "agent_name": request.agent_name
+    }
+    
+    if request.agent_id is not None:
+        payload["agent_id"] = request.agent_id
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response.raise_for_status()
+        return {"status": "success", "message": "Notificación enviada correctamente"}
+    except requests.exceptions.RequestException as e:
+        print(f"Error enviando notificación: {e}")
+        # Intentar leer el response
+        detail = "Error enviando el mensaje"
+        if hasattr(e, 'response') and e.response is not None:
+             try:
+                 error_json = e.response.json()
+                 detail = error_json.get("error", detail)
+             except Exception:
+                 detail = e.response.text or detail
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=detail
+        )

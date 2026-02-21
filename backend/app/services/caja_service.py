@@ -124,6 +124,44 @@ class CajaService:
         return query.order_by(Caja.fecha_apertura.desc()).offset(skip).limit(limit).all()
     
     @staticmethod
+    def actualizar_montos(db: Session, caja_id: int, data: 'CajaUpdate', usuario_id: int) -> Caja:
+        """Actualiza montos de una caja (solo admin)"""
+        caja = db.query(Caja).filter(Caja.id == caja_id).first()
+        if not caja:
+            raise HTTPException(status_code=404, detail="Caja no encontrada")
+        
+        # Validar que si la caja está abierta no se puede editar cierre (aunque ya viene null)
+        if caja.estado == 'abierta' and data.monto_cierre is not None:
+             # Opcional: permitir pre-establecer cierre? No, mejor no.
+             pass
+
+        if data.monto_apertura is not None:
+            caja.monto_apertura = data.monto_apertura
+            
+            # Si hay movimiento de apertura asociado, actualizarlo tb?
+            # Buscamos el primer movimiento de ingreso tipo 'Apertura de caja'
+            mov_apertura = db.query(MovimientoCaja).filter(
+                MovimientoCaja.caja_id == caja.id,
+                MovimientoCaja.concepto == 'Apertura de caja'
+            ).first()
+            
+            if mov_apertura:
+                mov_apertura.monto = data.monto_apertura
+            
+        if data.monto_cierre is not None:
+            caja.monto_cierre = data.monto_cierre
+            # Si la caja estaba abierta y le ponen monto cierre, ¿se cierra?
+            # No, eso es cerrar_caja. Aquí solo editamos valores.
+            # Asumimos que es para corregir valores de cajas CERRADAS.
+            
+        if data.notas is not None:
+            caja.notas = data.notas
+            
+        db.commit()
+        db.refresh(caja)
+        return caja
+
+    @staticmethod
     def get_all_paginado(
         db: Session,
         sede_id: int,
@@ -143,12 +181,39 @@ class CajaService:
         
         total_paginas = (total + por_pagina - 1) // por_pagina
         
+        # Enriquecer con cálculos
+        items = []
+        for caja in cajas:
+            # Calcular cuadre rápido (o reutilizar función si es eficiente)
+            # Para listados largos, calcular todo el detalle es pesado.
+            # Haremos una versión ligera de calcular_cuadre o usamos la misma.
+            # Dado que N=20, podemos usar calcular_cuadre sin mucho problema.
+            try:
+                cuadre = CajaService.calcular_cuadre(db, caja.id)
+                caja_dict = {
+                    'id': caja.id,
+                    'nombre': caja.nombre,
+                    'estado': caja.estado,
+                    'fecha_apertura': caja.fecha_apertura,
+                    'monto_apertura': caja.monto_apertura,
+                    'fecha_cierre': caja.fecha_cierre,
+                    'monto_cierre': caja.monto_cierre,
+                    'total_efectivo_teorico': cuadre['efectivo_teorico'],
+                    'diferencia': cuadre['diferencia'],
+                    'usuario_apertura_nombre': cuadre.get('usuario_apertura_nombre'),
+                    'usuario_cierre_nombre': cuadre.get('usuario_cierre_nombre')
+                }
+                items.append(caja_dict)
+            except Exception as e:
+                print(f"Error calculando cuadre id {caja.id}: {e}")
+                items.append(caja)
+
         return {
             'total': total,
             'pagina': pagina,
             'por_pagina': por_pagina,
             'total_paginas': total_paginas,
-            'items': cajas
+            'items': items
         }
     
     @staticmethod

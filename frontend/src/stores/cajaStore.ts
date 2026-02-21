@@ -50,7 +50,8 @@ interface CajaStoreState {
     fetchCajas: (estado?: 'abierta' | 'cerrada' | 'todos') => Promise<void>;
     fetchMetodosPago: () => Promise<void>;
     fetchMovimientos: (cajaId: number) => Promise<void>;
-    registrarMovimiento: (cajaId: number, datos: MovimientoCajaCreate) => Promise<void>;
+    registrarMovimiento: (caja_id: number, datos: MovimientoCajaCreate) => Promise<void>;
+    actualizarCaja: (cajaId: number, datos: { monto_apertura?: number; monto_cierre?: number; notas?: string }) => Promise<void>;
     clearError: () => void;
 }
 
@@ -135,6 +136,20 @@ export const useCajaStore = create<CajaStoreState>((set, get) => ({
             set({ movimientos: [...get().movimientos, mov], isLoading: false });
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Error al registrar movimiento';
+            set({ error: message, isLoading: false });
+            throw error;
+        }
+    },
+
+    actualizarCaja: async (cajaId, datos) => {
+        set({ isLoading: true, error: null });
+        try {
+            await cajasApi.actualizarCaja(cajaId, datos);
+            // Refrescar lista de cajas
+            const { fetchCajas } = get();
+            await fetchCajas('todos');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Error al actualizar caja';
             set({ error: message, isLoading: false });
             throw error;
         }

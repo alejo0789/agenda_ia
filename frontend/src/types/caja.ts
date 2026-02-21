@@ -29,8 +29,11 @@ export interface Caja {
     monto_apertura: number;
     fecha_cierre?: string;
     monto_cierre?: number;
+    total_efectivo_teorico?: number;
+    diferencia?: number;
     usuario_apertura_nombre?: string;
     usuario_cierre_nombre?: string;
+    notas?: string;
 }
 
 export interface CajaDetalle extends Caja {

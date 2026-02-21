@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str
     access_token_expire_minutes: int
+    webchat_backend: str = "https://largebotinterfaz-production-5b38.up.railway.app/api"
+    web_chat_security: str = "IA_w1232_r3quest_20dos?"
 
     class Config:
         env_file = ".env"

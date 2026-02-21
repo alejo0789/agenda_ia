@@ -18,6 +18,7 @@ PERMISOS_CAJA = [
     ('caja.facturar', 'Crear Facturas', 'caja', 'Permite crear facturas'),
     ('caja.anular', 'Anular Facturas', 'caja', 'Permite anular facturas'),
     ('caja.aprobar_pendientes', 'Aprobar Pendientes', 'caja', 'Permite aprobar/rechazar servicios pendientes'),
+    ('caja.editar', 'Editar Montos de Caja', 'caja', 'Permite corregir montos de apertura y cierre de caja'),
     ('config.editar', 'Editar Configuración', 'configuracion', 'Permite editar configuración del sistema'),
 ]
 

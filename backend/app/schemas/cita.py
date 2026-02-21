@@ -216,3 +216,15 @@ class CitaAgenteRequest(BaseModel):
     referencia_abono: Optional[str] = None
     concepto_abono: Optional[str] = None
 
+
+# ============================================
+# SCHEMAS PARA NOTIFICACIONES (WhatsApp)
+# ============================================
+
+class NotificacionRequest(BaseModel):
+    phone: str
+    name: str
+    message: str
+    agent_id: Optional[int] = None
+    agent_name: str = "Agendamiento Automático"
+

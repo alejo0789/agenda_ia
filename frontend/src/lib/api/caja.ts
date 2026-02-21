@@ -46,6 +46,12 @@ export const cajasApi = {
         return data;
     },
 
+    // Actualizar montos de caja (Admin)
+    async actualizarCaja(cajaId: number, datos: { monto_apertura?: number; monto_cierre?: number; notas?: string }): Promise<CajaDetalle> {
+        const { data } = await apiClient.put(`/cajas/${cajaId}`, datos);
+        return data;
+    },
+
     // Obtener detalle de caja
     async obtenerCaja(cajaId: number): Promise<CajaDetalle> {
         const { data } = await apiClient.get(`/cajas/${cajaId}`);

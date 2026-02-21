@@ -19,7 +19,8 @@ from typing import Optional, List
 from ..database import get_db
 from ..schemas.caja import (
     CajaAperturaCreate, CajaCierreCreate, CajaDetalle, CajaList,
-    CajaCuadre, CajasPaginadas, MovimientoCajaCreate, MovimientoCajaResponse
+    CajaCuadre, CajasPaginadas, MovimientoCajaCreate, MovimientoCajaResponse,
+    CajaUpdate
 )
 from ..services.caja_service import CajaService
 from ..services.movimiento_caja_service import MovimientoCajaService
@@ -64,6 +65,16 @@ def cerrar_caja(
     """BE-CAJA-003: Cerrar caja"""
     CajaService.cerrar_caja(db, caja_id, data, user["user"].id)
     return CajaService.get_detalle(db, caja_id)
+
+@router.put("/{caja_id}")
+def actualizar_caja(
+    caja_id: int,
+    data: CajaUpdate,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_permission("caja.editar")) # Require edit permission
+):
+    """BE-CAJA-004: Actualizar montos de caja (Admin)"""
+    return CajaService.actualizar_montos(db, caja_id, data, user["user"].id)
 
 
 @router.get("/{caja_id}")

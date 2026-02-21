@@ -32,6 +32,7 @@ import { ClienteListItem, ClienteCreateDTO } from '@/types/cliente';
 import { Servicio, formatDuracion, formatPrecio } from '@/types/servicio';
 import { toast } from 'sonner';
 import { PhotoUploadModal } from '@/components/common/PhotoUploadModal';
+import { SendConfirmationModal } from './SendConfirmationModal';
 
 interface Especialista {
     id: number;
@@ -444,6 +445,10 @@ export function AppointmentModal({
     // Estado para modal de fotos
     const [showPhotoModal, setShowPhotoModal] = useState(false);
 
+    // Estado para confirmación WhatsApp
+    const [citaRecienCreada, setCitaRecienCreada] = useState<any | null>(null);
+    const [showWhatsAppConfirm, setShowWhatsAppConfirm] = useState(false);
+
     // Cargar servicios al abrir el modal
     useEffect(() => {
         const loadServicios = async () => {
@@ -659,8 +664,13 @@ export function AppointmentModal({
                         concepto_abono: abonoData.concepto || undefined
                     } : {})
                 };
-                await citasApi.create(citaData);
+                const citaNueva = await citasApi.create(citaData);
                 toast.success('Cita agendada correctamente');
+
+                // Mostrar confirmación
+                setCitaRecienCreada(citaNueva);
+                setShowWhatsAppConfirm(true);
+                return; // No cerrar el modal principal todavía
             }
             onClose();
         } catch (error: any) {
@@ -1128,6 +1138,27 @@ export function AppointmentModal({
                     clienteId={clienteSeleccionado?.id || selectedCita?.cliente_id}
                     clienteTelefono={clienteSeleccionado?.telefono || selectedCita?.cliente?.telefono || undefined}
                     clienteNombre={clienteSeleccionado?.nombre || selectedCita?.cliente?.nombre}
+                />
+            )}
+
+            {/* Modal para enviar Notificación */}
+            {showWhatsAppConfirm && citaRecienCreada && (
+                <SendConfirmationModal
+                    isOpen={showWhatsAppConfirm}
+                    onClose={() => {
+                        setShowWhatsAppConfirm(false);
+                        setCitaRecienCreada(null);
+                        onClose(); // Cierra el modal principal de cita después
+                    }}
+                    cita={{
+                        id: citaRecienCreada.id,
+                        cliente: {
+                            nombre: citaRecienCreada.cliente?.nombre || clienteSeleccionado?.nombre || '',
+                            telefono: citaRecienCreada.cliente?.telefono || clienteSeleccionado?.telefono || ''
+                        },
+                        fecha: citaRecienCreada.fecha,
+                        hora_inicio: citaRecienCreada.hora_inicio
+                    }}
                 />
             )}
         </div>
