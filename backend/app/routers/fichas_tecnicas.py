@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import traceback
 
 from ..database import get_db
 from ..schemas.ficha_tecnica import (
@@ -39,7 +40,9 @@ def crear_plantilla(
         nueva_plantilla = FichaTecnicaService.crear_plantilla(db, plantilla)
         return nueva_plantilla
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        tb = traceback.format_exc()
+        print(f"\n=== ERROR CREAR PLANTILLA ===\n{tb}\n============================\n")
+        raise HTTPException(status_code=400, detail=f"{str(e)} | Trace: {tb[-500:]}")
 
 @router.get("/plantillas", response_model=List[PlantillaFichaResponse])
 def listar_plantillas(

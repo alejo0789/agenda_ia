@@ -37,14 +37,16 @@ class FichaTecnicaService:
                 plantilla_id=db_plantilla.id,
                 nombre=campo_data.nombre,
                 tipo=campo_data.tipo,
-                opciones=campo_data.opciones,
-                requerido=campo_data.requerido,
-                orden=campo_data.orden if campo_data.orden != 0 else i
+                opciones=campo_data.opciones or None,
+                requerido=bool(campo_data.requerido) if campo_data.requerido is not None else False,
+                orden=campo_data.orden if campo_data.orden and campo_data.orden != 0 else i
             )
             db.add(db_campo)
         
         db.commit()
         db.refresh(db_plantilla)
+        # Forzar carga de campos para evitar DetachedInstanceError
+        _ = db_plantilla.campos
         return db_plantilla
 
     @staticmethod
