@@ -33,6 +33,7 @@ import { Servicio, formatDuracion, formatPrecio } from '@/types/servicio';
 import { toast } from 'sonner';
 import { PhotoUploadModal } from '@/components/common/PhotoUploadModal';
 import { SendConfirmationModal } from './SendConfirmationModal';
+import { HistorialFichasCitaModal } from './HistorialFichasCitaModal';
 
 interface Especialista {
     id: number;
@@ -448,6 +449,9 @@ export function AppointmentModal({
     // Estado para confirmación WhatsApp
     const [citaRecienCreada, setCitaRecienCreada] = useState<any | null>(null);
     const [showWhatsAppConfirm, setShowWhatsAppConfirm] = useState(false);
+
+    // Estado para historial de fichas técnicas
+    const [showHistorialFichas, setShowHistorialFichas] = useState(false);
 
     // Cargar servicios al abrir el modal
     useEffect(() => {
@@ -898,26 +902,42 @@ export function AppointmentModal({
                         </div>
                     )}
 
-                    {/* Estado (solo en modo edición) */}
+                    {/* Estado e Historial (solo en modo edición) */}
                     {isEditMode && (
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Estado de la Cita</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {estadoOptions.map((estado) => (
-                                    <button
-                                        key={estado.value}
-                                        onClick={() => setFormData(prev => ({ ...prev, estado: estado.value }))}
-                                        className={`
-                                            px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                                            ${formData.estado === estado.value
-                                                ? `${estado.color} text-white shadow-md scale-105`
-                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                            }
-                                        `}
-                                    >
-                                        {estado.label}
-                                    </button>
-                                ))}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                            <div className="space-y-2 flex-1">
+                                <Label className="text-sm font-medium">Estado de la Cita</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {estadoOptions.map((estado) => (
+                                        <button
+                                            key={estado.value}
+                                            onClick={() => setFormData(prev => ({ ...prev, estado: estado.value }))}
+                                            className={`
+                                                px-3 py-1.5 rounded-full text-xs font-medium transition-all
+                                                ${formData.estado === estado.value
+                                                    ? `${estado.color} text-white shadow-md scale-105`
+                                                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                }
+                                            `}
+                                        >
+                                            {estado.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 items-end">
+                                <Label className="text-sm font-medium text-gray-500 hidden sm:block">Documentación</Label>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800/50 dark:text-emerald-400 dark:hover:bg-emerald-900/30 font-medium whitespace-nowrap bg-white dark:bg-gray-900"
+                                    onClick={() => setShowHistorialFichas(true)}
+                                    type="button"
+                                >
+                                    <FileText className="w-4 h-4 mr-2 text-emerald-500" />
+                                    Fichas Técnicas
+                                </Button>
                             </div>
                         </div>
                     )}
@@ -1150,6 +1170,7 @@ export function AppointmentModal({
                         setCitaRecienCreada(null);
                         onClose(); // Cierra el modal principal de cita después
                     }}
+                    showFichasSelector={true}
                     cita={{
                         id: citaRecienCreada.id,
                         cliente: {
@@ -1159,6 +1180,19 @@ export function AppointmentModal({
                         fecha: citaRecienCreada.fecha,
                         hora_inicio: citaRecienCreada.hora_inicio
                     }}
+                />
+            )}
+
+            {/* Modal de Historial de Fichas */}
+            {showHistorialFichas && selectedCita && (
+                <HistorialFichasCitaModal
+                    isOpen={showHistorialFichas}
+                    onClose={() => setShowHistorialFichas(false)}
+                    citaId={selectedCita.id}
+                    clienteNombre={`${clienteSeleccionado?.nombre || ''} ${clienteSeleccionado?.apellido || ''}`.trim()}
+                    clienteTelefono={clienteSeleccionado?.telefono || selectedCita?.cliente?.telefono || ''}
+                    fecha={formData.fecha}
+                    horaInicio={selectedCita.hora_inicio || formData.hora_inicio}
                 />
             )}
         </div>

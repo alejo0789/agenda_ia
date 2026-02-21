@@ -1,18 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Archive, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit2, Archive, Trash2, CheckCircle2, Eye, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fichasApi, PlantillaFicha } from '@/lib/api/fichas';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CreadorPlantillaModal } from '@/components/fichas/CreadorPlantillaModal';
+import { PrevisualizarFichaModal } from '@/components/fichas/PrevisualizarFichaModal';
 
 export default function FichasTecnicasPage() {
     const [plantillas, setPlantillas] = useState<PlantillaFicha[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [selectedPlantilla, setSelectedPlantilla] = useState<PlantillaFicha | undefined>(undefined);
 
     const loadPlantillas = async () => {
@@ -40,6 +42,11 @@ export default function FichasTecnicasPage() {
     const handleEdit = (plantilla: PlantillaFicha) => {
         setSelectedPlantilla(plantilla);
         setIsCreateModalOpen(true);
+    };
+
+    const handlePreview = (plantilla: PlantillaFicha) => {
+        setSelectedPlantilla(plantilla);
+        setIsPreviewModalOpen(true);
     };
 
     return (
@@ -115,15 +122,24 @@ export default function FichasTecnicasPage() {
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 dark:bg-gray-900/50 px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                            <div className="bg-gray-50 dark:bg-gray-900/50 px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handlePreview(plantilla)}
+                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                >
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Ver Cliente
+                                </Button>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleEdit(plantilla)}
                                     className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                                 >
-                                    <Edit2 className="w-4 h-4 mr-2" />
-                                    Ver / Editar
+                                    <Edit2 className="w-4 h-4" />
+                                    Editar
                                 </Button>
                             </div>
                         </div>
@@ -141,6 +157,15 @@ export default function FichasTecnicasPage() {
                         setIsCreateModalOpen(false);
                         loadPlantillas();
                     }}
+                />
+            )}
+
+            {/* Modal de Previsualización */}
+            {isPreviewModalOpen && (
+                <PrevisualizarFichaModal
+                    isOpen={isPreviewModalOpen}
+                    onClose={() => setIsPreviewModalOpen(false)}
+                    plantilla={selectedPlantilla || null}
                 />
             )}
         </div>

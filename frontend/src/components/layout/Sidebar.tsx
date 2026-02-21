@@ -22,6 +22,7 @@ import {
     Building2,
     Shield,
     Tag,
+    ClipboardList,
 } from 'lucide-react';
 
 const allMenuItems = [
@@ -60,6 +61,12 @@ const allMenuItems = [
         icon: DollarSign,
         href: '/dashboard/caja',
         roles: ['Administrador', 'Cajero', 'Especialista'],
+    },
+    {
+        title: 'Fichas Técnicas',
+        icon: ClipboardList,
+        href: '/dashboard/fichas-tecnicas',
+        roles: ['Administrador', 'Recepcionista'],
     },
     {
         title: 'Mi Perfil',
