@@ -18,7 +18,7 @@ from ..services.cita_service import CitaService
 from ..services.cliente_service import ClienteService
 from ..dependencies import require_permission
 from ..config import settings
-import requests
+import httpx
 import json
 
 router = APIRouter(
@@ -357,10 +357,10 @@ def enviar_notificacion(
         payload["agent_id"] = request.agent_id
     
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response = httpx.post(url, headers=headers, json=payload, timeout=10)
         response.raise_for_status()
         return {"status": "success", "message": "Notificación enviada correctamente"}
-    except requests.exceptions.RequestException as e:
+    except httpx.HTTPError as e:
         print(f"Error enviando notificación: {e}")
         # Intentar leer el response
         detail = "Error enviando el mensaje"

@@ -12,7 +12,7 @@ from app.services.password_service import PasswordService
 from app.services.audit_service import AuditService
 from app.services.permission_service import PermissionService
 from app.services.session_service import SessionService
-import requests
+import httpx
 import json
 
 BASE_URL = "http://127.0.0.1:8000"
@@ -140,14 +140,14 @@ def test_api_endpoints():
     print_section("6. TESTING API ENDPOINTS")
     
     # Test login with invalid credentials
-    response = requests.post(
+    response = httpx.post(
         f"{BASE_URL}/api/auth/login",
         data={"username": "invalid", "password": "invalid"}
     )
     print_test("Login with invalid credentials rejected", response.status_code == 401)
     
     # Test login with test user
-    response = requests.post(
+    response = httpx.post(
         f"{BASE_URL}/api/auth/login",
         data={"username": "testadmin", "password": "Admin123!@#"}
     )
@@ -160,23 +160,23 @@ def test_api_endpoints():
         headers = {"Authorization": f"Bearer {access_token}"}
         
         # Test getting current user
-        response = requests.get(f"{BASE_URL}/api/usuarios/me", headers=headers)
+        response = httpx.get(f"{BASE_URL}/api/usuarios/me", headers=headers)
         print_test("Get current user (me)", response.status_code == 200)
         
         # Test listing users
-        response = requests.get(f"{BASE_URL}/api/usuarios", headers=headers)
+        response = httpx.get(f"{BASE_URL}/api/usuarios", headers=headers)
         print_test("List users", response.status_code == 200)
         
         # Test listing roles
-        response = requests.get(f"{BASE_URL}/api/roles", headers=headers)
+        response = httpx.get(f"{BASE_URL}/api/roles", headers=headers)
         print_test("List roles", response.status_code == 200)
         
         # Test listing permissions
-        response = requests.get(f"{BASE_URL}/api/permisos", headers=headers)
+        response = httpx.get(f"{BASE_URL}/api/permisos", headers=headers)
         print_test("List permissions", response.status_code == 200)
         
         # Test creating user with weak password
-        response = requests.post(
+        response = httpx.post(
             f"{BASE_URL}/api/usuarios",
             headers=headers,
             json={
@@ -190,7 +190,7 @@ def test_api_endpoints():
         print_test("Weak password rejected (RN-AUTH-005)", response.status_code == 400)
         
         # Test creating user with strong password
-        response = requests.post(
+        response = httpx.post(
             f"{BASE_URL}/api/usuarios",
             headers=headers,
             json={

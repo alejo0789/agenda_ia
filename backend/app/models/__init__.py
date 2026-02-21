@@ -7,6 +7,7 @@ from .cliente import Cliente, ClientePreferencia, ClienteEtiqueta, ClienteEtique
 from .producto import Proveedor, Producto, UbicacionInventario, Inventario, MovimientoInventario
 from .cita import Cita, EstadoCita
 from .caja import Caja, MetodoPago, Factura, DetalleFactura, PagoFactura, MovimientoCaja, FacturaPendiente, Configuracion
+from .ficha_tecnica import PlantillaFicha, CampoFicha, CitaFicha, RespuestaFicha
 from .abono import Abono, RedencionAbono
 from .descuento import Descuento
 
@@ -18,6 +19,7 @@ __all__ = [
     "Proveedor", "Producto", "UbicacionInventario", "Inventario", "MovimientoInventario",
     "Cita", "EstadoCita",
     "Caja", "MetodoPago", "Factura", "DetalleFactura", "PagoFactura", "MovimientoCaja", "FacturaPendiente", "Configuracion",
+    "PlantillaFicha", "CampoFicha", "CitaFicha", "RespuestaFicha",
     "Abono", "RedencionAbono",
     "Descuento"
 ]
