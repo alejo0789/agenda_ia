@@ -37,7 +37,7 @@ class CampoFicha(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     plantilla_id = Column(Integer, ForeignKey("plantillas_fichas.id"), nullable=False, index=True)
-    nombre = Column(String(200), nullable=False)
+    nombre = Column(Text, nullable=False)
     tipo = Column(String(50), nullable=False) # TipoCampoFicha pero string para sqlite
     opciones = Column(Text, nullable=True) # JSON o separado por comas
     requerido = Column(Boolean, default=False)

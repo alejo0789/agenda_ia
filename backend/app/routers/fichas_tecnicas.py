@@ -12,6 +12,7 @@ from ..schemas.ficha_tecnica import (
 )
 from ..services.ficha_tecnica_service import FichaTecnicaService
 from ..dependencies import require_permission
+from sqlalchemy.orm import joinedload
 
 router = APIRouter(
     prefix="/api/fichas",
@@ -33,12 +34,15 @@ def crear_plantilla(
     Permiso requerido: agenda.crear
     """
     # Si la sede viene vacía (None), la hace global. Sino, de su sede actual.
-    if plantilla.sede_id is None:
-        plantilla.sede_id = auth_context["user"].sede_id
-        
+    try:
+        if plantilla.sede_id is None:
+            plantilla.sede_id = getattr(auth_context["user"], "sede_id", None)
+    except Exception:
+        pass
+
     try:
         nueva_plantilla = FichaTecnicaService.crear_plantilla(db, plantilla)
-        return nueva_plantilla
+        return PlantillaFichaResponse.model_validate(nueva_plantilla)
     except Exception as e:
         tb = traceback.format_exc()
         print(f"\n=== ERROR CREAR PLANTILLA ===\n{tb}\n============================\n")

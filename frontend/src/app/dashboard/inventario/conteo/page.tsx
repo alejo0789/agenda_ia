@@ -59,7 +59,8 @@ export default function ConteoFisicoPage() {
     // Establecer ubicación inicial
     useEffect(() => {
         if (ubicaciones.length > 0 && !ubicacionId) {
-            setUbicacionId(ubicaciones[0].id);
+            const bodega = ubicaciones.find(u => u.nombre.toLowerCase().includes('bodega'));
+            setUbicacionId(bodega ? bodega.id : ubicaciones[0].id);
         }
     }, [ubicaciones, ubicacionId]);
 

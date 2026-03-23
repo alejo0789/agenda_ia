@@ -299,11 +299,21 @@ class ProductoService:
         if producto.cantidad_inicial and producto.cantidad_inicial > 0:
             ubicacion_id = producto.ubicacion_inicial_id
             
-            # Si no se especifica ubicación, usar la principal (Bodega)
+            # Si no se especifica ubicación, usar la principal (Bodega) de la sede
             if not ubicacion_id:
+                # Buscar ubicación principal en esta sede
                 ubicacion_principal = db.query(UbicacionInventario).filter(
+                    UbicacionInventario.sede_id == sede_id,
                     UbicacionInventario.es_principal == 1
                 ).first()
+                
+                # Si no hay principal, buscar por nombre 'bodega' en esta sede
+                if not ubicacion_principal:
+                    ubicacion_principal = db.query(UbicacionInventario).filter(
+                        UbicacionInventario.sede_id == sede_id,
+                        UbicacionInventario.nombre.ilike('%bodega%')
+                    ).first()
+                
                 if ubicacion_principal:
                     ubicacion_id = ubicacion_principal.id
             
