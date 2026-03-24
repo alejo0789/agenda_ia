@@ -57,7 +57,8 @@ export const proveedoresApi = {
 export const productosApi = {
     // Listar todos los productos con filtros (el backend devuelve paginado)
     getAll: async (params?: ProductoFilters): Promise<Producto[]> => {
-        const response = await apiClient.get('/productos', { params });
+        const defaultParams = { por_pagina: 1000, estado: 'todos', ...params };
+        const response = await apiClient.get('/productos', { params: defaultParams });
         // El backend devuelve { items: [...], total, pagina, ... }
         return response.data.items || response.data;
     },

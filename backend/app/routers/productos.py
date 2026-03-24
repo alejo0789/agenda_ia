@@ -243,7 +243,7 @@ def listar_productos(
     precio_min: Optional[Decimal] = Query(None, description="Precio mínimo"),
     precio_max: Optional[Decimal] = Query(None, description="Precio máximo"),
     pagina: int = Query(1, ge=1, description="Número de página"),
-    por_pagina: int = Query(20, ge=1, le=100, description="Resultados por página"),
+    por_pagina: int = Query(1000, ge=1, le=10000, description="Resultados por página"),
     ordenar_por: str = Query('nombre', description="Campo para ordenar"),
     orden: str = Query('asc', pattern='^(asc|desc)$'),
     db: Session = Depends(get_db),
