@@ -856,31 +856,20 @@ export default function POSPage() {
                                     </div>
                                 </div>
                                 <div className="mt-2 flex flex-col gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                                    {/* Selector de Especialista por Item */}
-                                    <div className="relative">
-                                        <select
-                                            value={item.especialista_id}
-                                            onChange={(e) => {
-                                                const espId = parseInt(e.target.value);
-                                                const esp = especialistas.find(esp => esp.id === espId);
-                                                actualizarItem(item.id, {
-                                                    especialista_id: espId,
-                                                    especialista_nombre: esp ? `${esp.nombre} ${esp.apellido}` : 'Sin especialista'
-                                                });
-                                            }}
-                                            className="w-full text-[10px] p-1.5 pr-8 rounded border border-gray-200 dark:border-gray-700 bg-emerald-50/30 dark:bg-emerald-900/10 font-medium text-emerald-800 dark:text-emerald-300 appearance-none focus:ring-1 focus:ring-emerald-500"
-                                        >
-                                            <option value="">Seleccionar especialista...</option>
-                                            {especialistas.map(e => (
-                                                <option key={e.id} value={e.id}>
-                                                    Espec: {e.nombre} {e.apellido}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                                            <ChevronDown className="w-3 h-3 text-emerald-600" />
-                                        </div>
-                                    </div>
+                                    {/* Selector de Especialista Amigable */}
+                                    <EspecialistaSelector
+                                        especialistas={especialistas}
+                                        value={item.especialista_id}
+                                        onChange={(espId) => {
+                                            const esp = especialistas.find(esp => esp.id === espId);
+                                            actualizarItem(item.id, {
+                                                especialista_id: espId,
+                                                especialista_nombre: esp ? `${esp.nombre} ${esp.apellido}` : 'Sin especialista'
+                                            });
+                                        }}
+                                        placeholder="Cambiar especialista..."
+                                        className="w-full"
+                                    />
 
                                     <select
                                         value={item.descuento_id || ''}
