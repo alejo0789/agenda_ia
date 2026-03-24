@@ -633,28 +633,33 @@ class UbicacionService:
         ]
 
     @staticmethod
-    def inicializar_ubicaciones_por_defecto(db: Session) -> None:
-        """Crear ubicaciones por defecto si no existen"""
+    def inicializar_ubicaciones_por_defecto(db: Session, sede_id: int) -> None:
+        """Crear ubicaciones por defecto para una sede si no existen"""
         # Bodega (principal)
-        if not UbicacionService.get_by_nombre(db, "Bodega"):
+        if not UbicacionService.get_by_nombre(db, sede_id, "Bodega"):
             bodega = UbicacionInventario(
-                nombre="Bodega",
+                nombre=f"Bodega - Sede {sede_id}" if sede_id > 1 else "Bodega",
+                sede_id=sede_id,
                 tipo="bodega",
                 descripcion="Almacenamiento principal",
                 es_principal=1,
                 estado="activo"
             )
-            db.add(bodega)
+            # Aseguramos un nombre único si hay múltiples sedes
+            if not UbicacionService.get_by_nombre(db, sede_id, bodega.nombre):
+                db.add(bodega)
         
         # Vitrina
-        if not UbicacionService.get_by_nombre(db, "Vitrina"):
+        if not UbicacionService.get_by_nombre(db, sede_id, "Vitrina"):
             vitrina = UbicacionInventario(
-                nombre="Vitrina",
+                nombre=f"Vitrina - Sede {sede_id}" if sede_id > 1 else "Vitrina",
+                sede_id=sede_id,
                 tipo="vitrina",
                 descripcion="Punto de venta",
                 es_principal=0,
                 estado="activo"
             )
-            db.add(vitrina)
+            if not UbicacionService.get_by_nombre(db, sede_id, vitrina.nombre):
+                db.add(vitrina)
         
         db.commit()

@@ -562,11 +562,11 @@ def reporte_productos_por_especialista(
 @router.post("/inicializar-ubicaciones", status_code=status.HTTP_201_CREATED)
 def inicializar_ubicaciones(
     db: Session = Depends(get_db),
-    _: dict = Depends(require_permission("inventario.configurar"))
+    user: dict = Depends(require_permission("inventario.configurar"))
 ):
     """
     Crear ubicaciones por defecto (Bodega y Vitrina) si no existen.
     Permiso: inventario.configurar
     """
-    UbicacionService.inicializar_ubicaciones_por_defecto(db)
+    UbicacionService.inicializar_ubicaciones_por_defecto(db, user["user"].sede_id)
     return {"mensaje": "Ubicaciones inicializadas correctamente"}
