@@ -289,9 +289,11 @@ export default function MiPerfilPage() {
                                                         <td className="px-6 py-4">
                                                             <div className="flex flex-col">
                                                                 <span className="font-medium text-gray-900 dark:text-gray-100">
+                                                                    {item.item_nombre || (item.tipo === 'servicio' ? 'Servicio' : 'Producto')}
+                                                                </span>
+                                                                <span className="text-xs text-gray-500">
                                                                     {item.tipo === 'servicio' ? 'Servicio' : 'Producto'}
                                                                 </span>
-                                                                {/* Podríamos mostrar el nombre del item si viniera en la API, pero actualmente no viene en 'detalle' de comisiones por periodo */}
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-400">
