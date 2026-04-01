@@ -79,6 +79,33 @@ def listar_especialistas_calendario(
         Especialista.sede_id == user["user"].sede_id
     ).all()
 
+@router.get("/libres-en-horario", response_model=List[EspecialistaLibreResponse])
+def listar_especialistas_libre_horario(
+    fecha: date,
+    hora: str,
+    solo_disponibles: bool = True,
+    db: Session = Depends(get_db),
+    auth_context: dict = Depends(require_permission("agenda.ver"))
+):
+    """
+    BE-DISP-004: Listar todos los especialistas y su estado de disponibilidad en una hora específica
+    Útil para saber quién está libre hoy a las 3 PM, por ejemplo.
+    Permiso: agenda.ver
+    """
+    try:
+        from datetime import datetime
+        hora_time = datetime.strptime(hora, "%H:%M").time()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de hora inválido. Use HH:MM")
+
+    return DisponibilidadService.get_especialistas_libres_horario(
+        db=db,
+        sede_id=auth_context["user"].sede_id,
+        fecha=fecha,
+        hora=hora_time,
+        solo_disponibles=solo_disponibles
+    )
+
 
 @router.get("/{id}", response_model=EspecialistaResponse)
 def obtener_especialista(
@@ -467,29 +494,3 @@ def consultar_disponibilidad_nombre(
         hora_inicio=request.hora_inicio
     )
 
-@router.get("/libres-en-horario", response_model=List[EspecialistaLibreResponse])
-def listar_especialistas_libre_horario(
-    fecha: date,
-    hora: str,
-    solo_disponibles: bool = True,
-    db: Session = Depends(get_db),
-    auth_context: dict = Depends(require_permission("agenda.ver"))
-):
-    """
-    BE-DISP-004: Listar todos los especialistas y su estado de disponibilidad en una hora específica
-    Útil para saber quién está libre hoy a las 3 PM, por ejemplo.
-    Permiso: agenda.ver
-    """
-    try:
-        from datetime import datetime
-        hora_time = datetime.strptime(hora, "%H:%M").time()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Formato de hora inválido. Use HH:MM")
-
-    return DisponibilidadService.get_especialistas_libres_horario(
-        db=db,
-        sede_id=auth_context["user"].sede_id,
-        fecha=fecha,
-        hora=hora_time,
-        solo_disponibles=solo_disponibles
-    )
