@@ -9,7 +9,7 @@ from ..schemas.especialista import (
     BloqueoEspecialistaCreate, BloqueoEspecialistaUpdate, BloqueoEspecialistaResponse,
     EspecialistaServicioCreate, EspecialistaServicioUpdate, EspecialistaServicioResponse,
     DisponibilidadRequest, DisponibilidadGeneralRequest, DisponibilidadResponse,
-    DisponibilidadNombreRequest, DisponibilidadNombreResponse
+    DisponibilidadNombreRequest, DisponibilidadNombreResponse, EspecialistaCalendarioResponse
 )
 from ..services.especialista_service import EspecialistaService
 from ..services.horario_service import HorarioService
@@ -55,6 +55,27 @@ def listar_especialistas_activos(
     Permiso: agenda.ver
     """
     return EspecialistaService.get_activos(db, user["user"].sede_id)
+
+
+@router.get("/activos/calendario", response_model=List[EspecialistaCalendarioResponse])
+def listar_especialistas_calendario(
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_permission("agenda.ver"))
+):
+    """
+    Obtener especialistas activos con sus horarios y bloqueos para el calendario (batch request)
+    Permiso: agenda.ver
+    """
+    from sqlalchemy.orm import joinedload
+    from ..models.especialista import Especialista
+    
+    return db.query(Especialista).options(
+        joinedload(Especialista.horarios),
+        joinedload(Especialista.bloqueos)
+    ).filter(
+        Especialista.estado == "activo",
+        Especialista.sede_id == user["user"].sede_id
+    ).all()
 
 
 @router.get("/{id}", response_model=EspecialistaResponse)

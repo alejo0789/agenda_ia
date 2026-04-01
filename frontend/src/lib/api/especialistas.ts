@@ -27,6 +27,12 @@ export const especialistasApi = {
         return response.data;
     },
 
+    // Obtener especialistas activos con horarios y bloqueos (batch) para calendario
+    getActivosConCalendario: async (): Promise<(Especialista & { horarios: Horario[]; bloqueos: Bloqueo[] })[]> => {
+        const response = await apiClient.get('/especialistas/activos/calendario');
+        return response.data;
+    },
+
     // Obtener un especialista por ID
     getById: async (id: number): Promise<Especialista> => {
         const response = await apiClient.get(`/especialistas/${id}`);

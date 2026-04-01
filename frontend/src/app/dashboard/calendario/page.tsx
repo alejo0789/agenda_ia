@@ -95,46 +95,31 @@ export default function CalendarioPage() {
 
     // Cargar especialistas del backend
     useEffect(() => {
-        const loadEspecialistas = async () => {
+        const loadEspecialistas = async (retries = 3) => {
             setIsLoading(true);
             setError(null);
 
             try {
-                // Obtener especialistas activos
-                const especialistasData = await especialistasApi.getActivos();
+                // Obtener especialistas activos con horarios y bloqueos en UNA sola petición
+                const data = await especialistasApi.getActivosConCalendario();
 
-                // Para cada especialista, obtener sus horarios y bloqueos
-                const especialistasConHorarios: EspecialistaConHorario[] = await Promise.all(
-                    especialistasData.map(async (esp, index) => {
-                        try {
-                            const [horarios, bloqueos] = await Promise.all([
-                                especialistasApi.getHorarios(esp.id),
-                                especialistasApi.getBloqueos(esp.id)
-                            ]);
-
-                            return {
-                                ...esp,
-                                iniciales: `${esp.nombre.charAt(0)}${esp.apellido.charAt(0)}`.toUpperCase(),
-                                color: ESPECIALISTA_COLORS[index % ESPECIALISTA_COLORS.length],
-                                horarios,
-                                bloqueos
-                            };
-                        } catch (err) {
-                            console.error(`Error cargando datos de especialista ${esp.id}:`, err);
-                            return {
-                                ...esp,
-                                iniciales: `${esp.nombre.charAt(0)}${esp.apellido.charAt(0)}`.toUpperCase(),
-                                color: ESPECIALISTA_COLORS[index % ESPECIALISTA_COLORS.length],
-                                horarios: [],
-                                bloqueos: []
-                            };
-                        }
-                    })
-                );
+                const especialistasConHorarios: EspecialistaConHorario[] = data.map((esp, index) => ({
+                    ...esp,
+                    iniciales: `${esp.nombre.charAt(0)}${esp.apellido.charAt(0)}`.toUpperCase(),
+                    color: ESPECIALISTA_COLORS[index % ESPECIALISTA_COLORS.length],
+                }));
 
                 setEspecialistas(especialistasConHorarios);
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Error cargando especialistas:', err);
+                
+                // Si es un error temporal (502 de Railway despertando) reintentamos
+                if (retries > 0 && (err.response?.status === 502 || !err.response)) {
+                    console.log(`Reintentando carga de especialistas... (${retries} restantes)`);
+                    setTimeout(() => loadEspecialistas(retries - 1), 2000);
+                    return;
+                }
+
                 setError('Error al cargar los especialistas. Verifica la conexión con el servidor.');
                 toast.error('Error al cargar especialistas');
             } finally {

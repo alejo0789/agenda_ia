@@ -222,3 +222,9 @@ class DisponibilidadNombreResponse(BaseModel):
     mensaje: str
     conflictos: Optional[List[dict]] = None
 
+class EspecialistaCalendarioResponse(EspecialistaResponse):
+    horarios: List[HorarioEspecialistaResponse]
+    bloqueos: List[BloqueoEspecialistaResponse]
+
+    class Config:
+        from_attributes = True

@@ -7,6 +7,7 @@ console.log('🔧 API Client configurado con base URL:', API_URL);
 // Crear instancia de axios
 export const apiClient = axios.create({
     baseURL: API_URL,
+    timeout: 15000,
     headers: {
         'Content-Type': 'application/json',
     },
