@@ -228,3 +228,14 @@ class EspecialistaCalendarioResponse(EspecialistaResponse):
 
     class Config:
         from_attributes = True
+class LibresRequest(BaseModel):
+    fecha: date
+    hora: time
+
+class EspecialistaLibreResponse(BaseModel):
+    id: int
+    nombre_completo: str
+    esta_en_horario: bool
+    tiene_bloqueo: bool
+    tiene_cita: bool
+    disponible: bool

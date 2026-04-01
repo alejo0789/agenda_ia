@@ -109,14 +109,14 @@ class DisponibilidadService:
         Consulta si un especialista por nombre está libre, ocupado o bloqueado
         """
         # 1. Buscar especialista
-        terma_busqueda = f"%{nombre_especialista}%"
+        termino_busqueda = f"%{nombre_especialista}%"
         especialista = db.query(Especialista).filter(
             Especialista.sede_id == sede_id,
             Especialista.estado == "activo",
             or_(
-                Especialista.nombre.ilike(terma_busqueda),
-                Especialista.apellido.ilike(terma_busqueda),
-                func.concat(Especialista.nombre, " ", Especialista.apellido).ilike(terma_busqueda)
+                Especialista.nombre.ilike(termino_busqueda),
+                Especialista.apellido.ilike(termino_busqueda),
+                func.concat(Especialista.nombre, " ", Especialista.apellido).ilike(termino_busqueda)
             )
         ).first()
 
@@ -189,6 +189,73 @@ class DisponibilidadService:
             estado="disponible",
             mensaje=f"El especialista {especialista.nombre} está totalmente disponible."
         )
+
+    @staticmethod
+    def get_especialistas_libres_horario(
+        db: Session,
+        sede_id: int,
+        fecha: date,
+        hora: time,
+        solo_disponibles: bool = False
+    ) -> List[dict]:
+        """
+        Obtener todos los especialistas de una sede y su estado en una hora específica
+        """
+        from sqlalchemy.orm import joinedload
+        
+        # 1. Obtener todos los especialistas activos de la sede
+        especialistas = db.query(Especialista).options(
+            joinedload(Especialista.horarios),
+            joinedload(Especialista.bloqueos)
+        ).filter(
+            Especialista.sede_id == sede_id,
+            Especialista.estado == "activo"
+        ).all()
+
+        # Calcular una ventana de tiempo (ej: 15 min) para la verificación de solapamiento
+        dt_inicio = datetime.combine(fecha, hora)
+        # Usamos una ventana de 1 minuto solo para detectar si coincide con el inicio o durante una cita/bloqueo
+        dt_fin = dt_inicio + timedelta(minutes=1)
+        hora_fin = dt_fin.time()
+
+        resultados = []
+        for esp in especialistas:
+            # A. Verificar si está en su horario laboral
+            # Convertir de 0=Lunes (Python) a 0=Domingo (Backend/App logic)
+            dia_semana_py = fecha.weekday()
+            dia_semana = (dia_semana_py + 1) % 7
+            
+            en_horario = False
+            for h in esp.horarios:
+                if h.activo and h.dia_semana == dia_semana:
+                    # El horario laboral debe cubrir el momento consultado
+                    if h.hora_inicio <= hora and h.hora_fin > hora:
+                        en_horario = True
+                        break
+            
+            # B. Verificar bloqueos
+            tiene_bloqueo = DisponibilidadService._esta_bloqueado(fecha, hora, hora_fin, esp.bloqueos)
+            
+            # C. Verificar citas
+            tiene_cita = db.query(Cita).filter(
+                Cita.especialista_id == esp.id,
+                Cita.fecha == fecha,
+                Cita.estado.notin_(['cancelada', 'no_show']),
+                Cita.hora_inicio <= hora,
+                Cita.hora_fin > hora
+            ).first() is not None
+
+            if not solo_disponibles or (en_horario and not tiene_bloqueo and not tiene_cita):
+                resultados.append({
+                    "id": esp.id,
+                    "nombre_completo": f"{esp.nombre} {esp.apellido}",
+                    "esta_en_horario": en_horario,
+                    "tiene_bloqueo": tiene_bloqueo,
+                    "tiene_cita": tiene_cita,
+                    "disponible": en_horario and not tiene_bloqueo and not tiene_cita
+                })
+        
+        return resultados
 
 
     @staticmethod

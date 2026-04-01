@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 
 from ..database import get_db
@@ -9,7 +10,8 @@ from ..schemas.especialista import (
     BloqueoEspecialistaCreate, BloqueoEspecialistaUpdate, BloqueoEspecialistaResponse,
     EspecialistaServicioCreate, EspecialistaServicioUpdate, EspecialistaServicioResponse,
     DisponibilidadRequest, DisponibilidadGeneralRequest, DisponibilidadResponse,
-    DisponibilidadNombreRequest, DisponibilidadNombreResponse, EspecialistaCalendarioResponse
+    DisponibilidadNombreRequest, DisponibilidadNombreResponse, EspecialistaCalendarioResponse,
+    EspecialistaLibreResponse
 )
 from ..services.especialista_service import EspecialistaService
 from ..services.horario_service import HorarioService
@@ -463,4 +465,31 @@ def consultar_disponibilidad_nombre(
         servicio=request.servicio,
         fecha=request.fecha,
         hora_inicio=request.hora_inicio
+    )
+
+@router.get("/libres-en-horario", response_model=List[EspecialistaLibreResponse])
+def listar_especialistas_libre_horario(
+    fecha: date,
+    hora: str,
+    solo_disponibles: bool = True,
+    db: Session = Depends(get_db),
+    auth_context: dict = Depends(require_permission("agenda.ver"))
+):
+    """
+    BE-DISP-004: Listar todos los especialistas y su estado de disponibilidad en una hora específica
+    Útil para saber quién está libre hoy a las 3 PM, por ejemplo.
+    Permiso: agenda.ver
+    """
+    try:
+        from datetime import datetime
+        hora_time = datetime.strptime(hora, "%H:%M").time()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de hora inválido. Use HH:MM")
+
+    return DisponibilidadService.get_especialistas_libres_horario(
+        db=db,
+        sede_id=auth_context["user"].sede_id,
+        fecha=fecha,
+        hora=hora_time,
+        solo_disponibles=solo_disponibles
     )
