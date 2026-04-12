@@ -34,6 +34,8 @@ import { toast } from 'sonner';
 import { PhotoUploadModal } from '@/components/common/PhotoUploadModal';
 import { SendConfirmationModal } from './SendConfirmationModal';
 import { HistorialFichasCitaModal } from './HistorialFichasCitaModal';
+import { LiztoPublishModal } from './LiztoPublishModal';
+import { Send } from 'lucide-react';
 
 interface Especialista {
     id: number;
@@ -69,6 +71,7 @@ interface Cita {
     duracion: number;
     estado: string;
     notas: string | null;
+    lizto_reservation_id?: string | null;
 }
 
 interface ServicioPorCategoria {
@@ -452,6 +455,17 @@ export function AppointmentModal({
 
     // Estado para historial de fichas técnicas
     const [showHistorialFichas, setShowHistorialFichas] = useState(false);
+
+    // Estado para integrar con Lizto
+    const [showLiztoModal, setShowLiztoModal] = useState(false);
+    const [localLiztoId, setLocalLiztoId] = useState<string | null>(selectedCita?.lizto_reservation_id || null);
+
+    // Sincronizar localLiztoId cuando selectedCita cambie
+    useEffect(() => {
+        if (selectedCita) {
+            setLocalLiztoId(selectedCita.lizto_reservation_id || null);
+        }
+    }, [selectedCita]);
 
     // Cargar servicios al abrir el modal
     useEffect(() => {
@@ -1123,11 +1137,29 @@ export function AppointmentModal({
 
                 {/* Footer */}
                 <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
-                    {isEditMode && (
-                        <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50">
-                            Cancelar Cita
-                        </Button>
-                    )}
+                    <div className="flex gap-2">
+                        {isEditMode && (
+                            <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50">
+                                Cancelar Cita
+                            </Button>
+                        )}
+                        {isEditMode && selectedCita && !localLiztoId && (
+                            <Button 
+                                variant="outline" 
+                                className="border-[#2CC149] text-[#2CC149] hover:bg-[#2CC149]/10 flex items-center gap-2"
+                                onClick={() => setShowLiztoModal(true)}
+                            >
+                                <Send className="w-4 h-4" />
+                                Publicar en Lizto
+                            </Button>
+                        )}
+                        {isEditMode && selectedCita && localLiztoId && (
+                            <div className="px-3 py-2 flex items-center gap-2 text-sm text-gray-500 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
+                                <Send className="w-4 h-4 text-[#2CC149]" />
+                                En Lizto #{localLiztoId}
+                            </div>
+                        )}
+                    </div>
                     <div className={`flex gap-3 ${isEditMode ? '' : 'ml-auto'}`}>
                         <Button variant="outline" onClick={onClose}>
                             Cancelar
@@ -1193,6 +1225,19 @@ export function AppointmentModal({
                     clienteTelefono={clienteSeleccionado?.telefono || selectedCita?.cliente?.telefono || ''}
                     fecha={formData.fecha}
                     horaInicio={selectedCita.hora_inicio || formData.hora_inicio}
+                />
+            )}
+
+            {/* Modal de Publicación en Lizto */}
+            {showLiztoModal && selectedCita && (
+                <LiztoPublishModal
+                    isOpen={showLiztoModal}
+                    onClose={() => setShowLiztoModal(false)}
+                    cita={selectedCita as any}
+                    onSuccess={(lizto_id) => {
+                        setLocalLiztoId(lizto_id);
+                        toast.success("Cita publicada exitosamente en Lizto");
+                    }}
                 />
             )}
         </div>

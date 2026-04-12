@@ -1,0 +1,116 @@
+{
+  "name": "Agenda IA - Flujo Consolidado (Optimizado)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agenda-ia",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -128,
+        -32
+      ],
+      "id": "acdd2d55-81b6-408c-9ba3-d622d1cb0a48",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres el Asistente de Agendamiento Inteligente de \"Agenda IA\". Tu función es procesar las solicitudes de citas. \n\n### PROTOCOLO OBLIGATORIO\n1. Usa 'Consultar Disponibilidad' con la fecha (YYYY-MM-DD) y hora (HH:MM) solicitada.\n2. Informa al administrador qué especialistas están disponibles (campo 'nombre_completo' del resultado).\n3. Una vez el administrador confirme al especialista y los datos, usa 'Crear_Cita'.\n\n### DATOS DE CONTEXTO\n- Sede: {{ $node[\"Webhook\"].json[\"body\"][\"sede\"] || 'Principal' }}\n- Fecha actual: {{ $now.setZone('America/Bogota').toFormat('yyyy-MM-dd') }}\n- Hora actual: {{ $now.setZone('America/Bogota').toFormat('HH:mm') }}\n\n### SERVICIOS PERMITIDOS\nalisado, repolarizacion, garantia.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        336,
+        -32
+      ],
+      "id": "d4db6e1c-3d9a-485d-87f6-2c0fa86f060c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta especialistas libres en una fecha y hora. Retorna lista de disponibles.",
+        "url": "https://agendaia-production.up.railway.app/api/especialistas/libres-en-horario",
+        "sendQueryParameters": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fecha",
+              "value": "={{ $fromAI('fecha', '', 'string') }}"
+            },
+            {
+              "name": "hora",
+              "value": "={{ $fromAI('hora', '', 'string') }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Edit Fields').first().json.token }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.1,
+      "position": [
+        400,
+        208
+      ],
+      "id": "442923d5-795f-4b10-b943-7758fd4f2f0d",
+      "name": "Consultar Disponibilidad"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Crea la cita final en el sistema.",
+        "method": "POST",
+        "url": "https://agendaia-production.up.railway.app/api/citas/agendar-externo",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $('Edit Fields').first().json.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "nombre", "value": "={{ $fromAI('nombre') }}" },
+            { "name": "apellido", "value": "={{ $fromAI('apellido') }}" },
+            { "name": "cedula", "value": "={{ $fromAI('cedula') }}" },
+            { "name": "telefono", "value": "={{ $fromAI('telefono') }}" },
+            { "name": "servicio", "value": "={{ $fromAI('servicio') }}" },
+            { "name": "fecha", "value": "={{ $fromAI('fecha') }}" },
+            { "name": "hora_inicio", "value": "={{ $fromAI('hora') }}" },
+            { "name": "sede", "value": "={{ $fromAI('sede') }}" },
+            { "name": "especialista_id", "value": "={{ $fromAI('especialista_id') }}" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.1,
+      "position": [
+        592,
+        208
+      ],
+      "id": "d7837b25-0715-401a-b4ed-3d3ac9e57d4e",
+      "name": "Crear_Cita"
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[ { "node": "Edit Fields", "type": "main", "index": 0 } ]] },
+    "Edit Fields": { "main": [[ { "node": "AI Agent", "type": "main", "index": 0 } ]] },
+    "Consultar Disponibilidad": { "ai_tool": [[ { "node": "AI Agent", "type": "ai_tool", "index": 0 } ]] },
+    "Crear_Cita": { "ai_tool": [[ { "node": "AI Agent", "type": "ai_tool", "index": 0 } ]] }
+  }
+}

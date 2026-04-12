@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles  # Importar StaticFiles
 from .routers import users, auth, roles, especialistas, servicios, clientes, citas, productos, inventario, sedes, dashboard
-from .routers import cajas, facturas, facturas_pendientes, ventas, comisiones, abonos, reportes, nomina, files, descuentos, fichas_tecnicas
+from .routers import cajas, facturas, facturas_pendientes, ventas, comisiones, abonos, reportes, nomina, files, descuentos, fichas_tecnicas, lizto_mapping
 from .database import engine, Base
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -122,6 +122,7 @@ app.include_router(nomina.router)
 app.include_router(files.router)  # Registrar router de archivos
 app.include_router(descuentos.router)
 app.include_router(fichas_tecnicas.router)
+app.include_router(lizto_mapping.router)
 
 @app.get("/")
 def read_root():

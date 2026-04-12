@@ -40,6 +40,7 @@ class Cita(Base):
     estado = Column(String(20), default="agendada", index=True)
     notas = Column(Text)
     notas_internas = Column(Text)  # Notas solo visibles para el personal
+    lizto_reservation_id = Column(String(50), nullable=True)
     
     # Precio (puede diferir del precio base del servicio)
     precio = Column(Integer, default=0)  # En centavos

@@ -20,6 +20,7 @@ interface Cita {
     duracion: number;
     estado: string;
     notas: string | null;
+    lizto_reservation_id?: string | null;
 }
 
 interface CitaCardProps {
@@ -87,13 +88,20 @@ export function CitaCard({ cita, onClick, color }: CitaCardProps) {
             style={{ borderLeftColor: color }}
         >
             <div className={`p-2 h-full flex flex-col ${isCompact ? 'gap-0' : 'gap-1'}`}>
-                {/* Nombre del Cliente */}
+                {/* Nombre del Cliente y Badge en Lizto */}
                 <div className="flex items-center gap-1">
                     <User className="w-3 h-3 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                     <span className="font-medium text-gray-900 dark:text-white text-xs truncate">
                         {cita.cliente.nombre}
                     </span>
                 </div>
+                {cita.lizto_reservation_id && (
+                    <div className="flex">
+                        <span className="px-1 py-0.5 text-[9px] font-semibold bg-[#2CC149] text-white rounded-sm drop-shadow-sm self-start truncate">
+                            En Lizto: #{cita.lizto_reservation_id}
+                        </span>
+                    </div>
+                )}
 
                 {/* Servicio - oculto en citas muy cortas */}
                 {!isCompact && (

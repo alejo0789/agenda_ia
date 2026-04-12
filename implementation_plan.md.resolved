@@ -1,0 +1,239 @@
+# Integración SIAgenda → Lizto: Publicar Cita Manual
+
+La integración es **manual y bajo demanda**. El usuario se para sobre una cita en el calendario, abre el modal de detalle, y decide si desea **publicar esa cita en Lizto** con un botón explícito.
+
+---
+
+## Flujo de Usuario
+
+```
+Usuario ve cita en el calendario
+           ↓
+    Hace clic en la cita
+           ↓
+  AppointmentModal se abre
+  (pestaña "Detalle de Cita")
+           ↓
+  Botón "Publicar en Lizto" [solo visible si la cita NO está ya publicada]
+           ↓
+  LiztoPublishModal (confirmar + ver qué se va a enviar)
+    - Muestra: cliente, especialista Lizto mapeado, servicio Lizto mapeado
+    - Previsualización antes de confirmar
+           ↓
+  POST /api/lizto/publicar/{cita_id}
+           ↓
+  Backend: LiztoSyncService.sync_cita()
+    1. Login en Lizto
+    2. Buscar/crear cliente por CC
+    3. Resolver lizto_staff_id del especialista
+    4. Resolver lizto_service_id del servicio
+    5. create_appointment() en Lizto
+           ↓
+  Guardar lizto_reservation_id en la cita
+           ↓
+  Modal muestra: "✅ Cita publicada en Lizto #ID"
+  Cita en calendario muestra badge verde "En Lizto"
+```
+
+---
+
+## Componentes a Crear / Modificar
+
+### 1. Base de Datos — 3 Tablas de Mapeo
+
+#### `especialista_lizto_mapping`
+Mapea un especialista de SIAgenda con su `staff_id` en Lizto.
+
+```sql
+CREATE TABLE especialista_lizto_mapping (
+    especialista_id   INTEGER PRIMARY KEY REFERENCES especialistas(id) ON DELETE CASCADE,
+    lizto_staff_id    INTEGER NOT NULL,
+    lizto_staff_name  VARCHAR(150),   -- solo referencia visual / debug
+    fecha_creacion    TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### `servicio_lizto_mapping`
+Mapea un servicio de SIAgenda con el `service_id` + `price_id` en Lizto.
+
+```sql
+CREATE TABLE servicio_lizto_mapping (
+    servicio_id       INTEGER PRIMARY KEY REFERENCES servicios(id) ON DELETE CASCADE,
+    lizto_service_id  INTEGER NOT NULL,
+    lizto_price_id    INTEGER NOT NULL,
+    lizto_price_value DECIMAL(12,2) NOT NULL,
+    lizto_service_name VARCHAR(150),  -- referencia visual
+    fecha_creacion    TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### `lizto_config`
+Configuración global de la integración.
+
+```sql
+CREATE TABLE lizto_config (
+    key   VARCHAR(100) PRIMARY KEY,
+    value VARCHAR(500) NOT NULL
+);
+
+INSERT INTO lizto_config VALUES
+  ('location_id',  '8'),
+  ('register_id',  '8'),
+  ('user_id',      '189');
+```
+
+---
+
+### 2. Modelos ORM
+
+#### [MODIFY] [especialista.py](file:///c:/Users/alejandro.carvajal/Documents/large/software/backend/app/models/especialista.py)
+Agregar modelo `EspecialistaLiztoMapping`.
+
+#### [MODIFY] [servicio.py](file:///c:/Users/alejandro.carvajal/Documents/large/software/backend/app/models/servicio.py)
+Agregar modelo `ServicioLiztoMapping`.
+
+#### [MODIFY] [cita.py](file:///c:/Users/alejandro.carvajal/Documents/large/software/backend/app/models/cita.py)
+Agregar columna:
+```python
+lizto_reservation_id = Column(String(50), nullable=True)
+```
+
+---
+
+### 3. Backend — Servicio de Sincronización
+
+#### [NEW] `services/lizto_sync_service.py`
+
+```python
+class LiztoSyncService:
+    def sync_cita(self, db: Session, cita_id: int) -> dict:
+        """
+        Retorna: { "lizto_reservation_id": "...", "success": True }
+        Lanza excepción descriptiva si algo falla.
+        """
+        # 1. Cargar la cita con cliente y especialista
+        # 2. Login en LiztoClient (credenciales desde env)
+        # 3. Buscar cliente en Lizto por cédula → crear si no existe
+        # 4. Resolver lizto_staff_id desde especialista_lizto_mapping
+        # 5. Resolver lizto_service_id / price_id desde servicio_lizto_mapping
+        # 6. create_appointment() en Lizto
+        # 7. Persistir lizto_reservation_id en la cita
+```
+
+Reutiliza `LiztoClient` de `.agents/skills/lizto_billing/scripts/lizto_client.py`.
+
+---
+
+### 4. Backend — Nuevo Endpoint
+
+#### [NEW] `routers/lizto_mapping.py`
+
+```
+# Publicación de citas
+POST /api/lizto/publicar/{cita_id}      → ejecutar sync manual
+
+# Gestión de mapeo (admin)
+GET  /api/lizto/mapping/especialistas   → listar mapeos de especialistas
+POST /api/lizto/mapping/especialistas   → crear/editar mapeo especialista
+GET  /api/lizto/mapping/servicios       → listar mapeos de servicios
+POST /api/lizto/mapping/servicios       → crear/editar mapeo servicio
+
+# Utilidades
+GET  /api/lizto/staff                   → listar staff de Lizto (para poblar mapeos)
+GET  /api/lizto/services                → listar servicios de Lizto
+GET  /api/lizto/config                  → ver config global
+PUT  /api/lizto/config                  → editar config global
+```
+
+---
+
+### 5. Frontend — Badge "En Lizto" en el Calendario
+
+#### [MODIFY] [CitaCard.tsx](file:///c:/Users/alejandro.carvajal/Documents/large/software/frontend/src/components/calendario/CitaCard.tsx)
+
+Si `cita.lizto_reservation_id` existe, mostrar un badge compacto verde en la esquina de la tarjeta de cita.
+
+---
+
+### 6. Frontend — Botón y Modal de Publicación
+
+#### [MODIFY] [AppointmentModal.tsx](file:///c:/Users/alejandro.carvajal/Documents/large/software/frontend/src/components/calendario/AppointmentModal.tsx)
+
+En el panel de detalle de una cita existente, agregar:
+- Si `lizto_reservation_id` es null: botón **"Publicar en Lizto"** (logo Lizto / ícono)
+- Si ya está publicada: texto de solo lectura "Publicada en Lizto #ID"
+
+#### [NEW] `LiztoPublishModal.tsx`
+
+Modal de confirmación antes de publicar:
+```
+┌─────────────────────────────────┐
+│   📤 Publicar en Lizto          │
+├─────────────────────────────────┤
+│ Cliente:     María Gómez        │
+│ Especialista:Lizto: Valentina R.│
+│ Servicio:    Lizto: Alisado     │
+│ Fecha:       12 Abr - 10:00 AM  │
+├─────────────────────────────────┤
+│ ⚠️ Especialista sin mapeo       │ ← error si falta config
+│ ⚠️ Servicio sin mapeo           │
+├─────────────────────────────────┤
+│   [Cancelar]  [Publicar ✓]     │
+└─────────────────────────────────┘
+```
+
+---
+
+### 7. Frontend — Panel de Administración de Mapeos
+
+#### [NEW] `app/dashboard/admin/lizto/page.tsx`
+
+Página de administración donde se configuran los mapeos:
+- **Tab 1**: Especialistas → Hacer match de especialista SIAgenda ↔ Staff de Lizto (dropdown)
+- **Tab 2**: Servicios → Hacer match de servicio SIAgenda ↔ Servicio Lizto (dropdown con precio)
+- **Tab 3**: Config global (location_id, user_id, etc.)
+
+---
+
+## Archivos Involucrados
+
+| Archivo | Acción |
+|---|---|
+| `backend/app/models/especialista.py` | MODIFY — agregar `EspecialistaLiztoMapping` |
+| `backend/app/models/servicio.py` | MODIFY — agregar `ServicioLiztoMapping` |
+| `backend/app/models/cita.py` | MODIFY — agregar `lizto_reservation_id` |
+| `backend/app/services/lizto_sync_service.py` | NEW |
+| `backend/app/routers/lizto_mapping.py` | NEW |
+| `backend/app/main.py` | MODIFY — registrar router |
+| `backend/app/config.py` | MODIFY — agregar `LIZTO_EMAIL`, `LIZTO_PASSWORD` |
+| `frontend/.../CitaCard.tsx` | MODIFY — badge "En Lizto" |
+| `frontend/.../AppointmentModal.tsx` | MODIFY — botón "Publicar en Lizto" |
+| `frontend/.../LiztoPublishModal.tsx` | NEW — modal de confirmación |
+| `frontend/.../admin/lizto/page.tsx` | NEW — panel de administración de mapeos |
+| Migración SQL | NEW — 3 tablas nuevas |
+
+---
+
+## Decisiones de Diseño
+
+> [!IMPORTANT]
+> **Trigger manual**: La publicación solo ocurre cuando el usuario lo decide desde el modal. No hay sync automático. La cita en SIAgenda es siempre la "fuente de verdad".
+
+> [!NOTE]
+> **Manejo de errores**: Si el especialista o servicio no tiene mapeo en Lizto, el `LiztoPublishModal` lo muestra en rojo y deshabilita el botón "Publicar" hasta que se configure.
+
+> [!NOTE]
+> **Credenciales**: `LIZTO_EMAIL` y `LIZTO_PASSWORD` en `.env`. El `LiztoClient` hace login en cada solicitud (el cliente guarda cookies de sesión en RAM).
+
+> [!WARNING]
+> **Idempotencia**: Si la cita ya tiene `lizto_reservation_id`, el endpoint retorna 409 y no vuelve a crear la cita en Lizto.
+
+---
+
+## Plan de Verificación
+
+1. Correr `GET /api/lizto/staff` y `GET /api/lizto/services` para ver los IDs disponibles en Lizto
+2. Configurar mapeos en el panel admin
+3. Crear cita de prueba en SIAgenda → abrir modal → "Publicar en Lizto"
+4. Verificar que la cita aparece en el calendario de `app.lizto.co`
+5. Verificar que el badge "En Lizto" aparece en la tarjeta de la cita

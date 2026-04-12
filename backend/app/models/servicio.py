@@ -43,6 +43,7 @@ class Servicio(Base):
     # Relationships
     categoria = relationship("CategoriaServicio", back_populates="servicios")
     especialistas = relationship("EspecialistaServicio", back_populates="servicio")
+    lizto_mapping = relationship("ServicioLiztoMapping", back_populates="servicio", uselist=False, cascade="all, delete-orphan")
 
     __table_args__ = (
         CheckConstraint("duracion_minutos >= 15", name="chk_duracion_minima"),
@@ -52,3 +53,16 @@ class Servicio(Base):
         CheckConstraint("valor_comision >= 0", name="chk_valor_comision_positivo"),
     )
 
+
+class ServicioLiztoMapping(Base):
+    __tablename__ = "servicio_lizto_mapping"
+
+    servicio_id = Column(Integer, ForeignKey("servicios.id", ondelete="CASCADE"), primary_key=True)
+    lizto_service_id = Column(Integer, nullable=False)
+    lizto_price_id = Column(Integer, nullable=False)
+    lizto_price_value = Column(DECIMAL(12, 2), nullable=False)
+    lizto_service_name = Column(String(150))
+    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    servicio = relationship("Servicio", back_populates="lizto_mapping")

@@ -24,6 +24,7 @@ class Especialista(Base):
     horarios = relationship("HorarioEspecialista", back_populates="especialista", cascade="all, delete-orphan")
     bloqueos = relationship("BloqueoEspecialista", back_populates="especialista", cascade="all, delete-orphan")
     servicios = relationship("EspecialistaServicio", back_populates="especialista", cascade="all, delete-orphan")
+    lizto_mapping = relationship("EspecialistaLiztoMapping", back_populates="especialista", uselist=False, cascade="all, delete-orphan")
     
     __table_args__ = (
         CheckConstraint("estado IN ('activo', 'inactivo')", name="chk_especialista_estado"),
@@ -89,3 +90,15 @@ class EspecialistaServicio(Base):
         CheckConstraint("tipo_comision IN ('porcentaje', 'fijo')", name="chk_tipo_comision"),
         CheckConstraint("valor_comision >= 0", name="chk_valor_comision_positivo"),
     )
+
+
+class EspecialistaLiztoMapping(Base):
+    __tablename__ = "especialista_lizto_mapping"
+
+    especialista_id = Column(Integer, ForeignKey("especialistas.id", ondelete="CASCADE"), primary_key=True)
+    lizto_staff_id = Column(Integer, nullable=False)
+    lizto_staff_name = Column(String(150))
+    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    especialista = relationship("Especialista", back_populates="lizto_mapping")

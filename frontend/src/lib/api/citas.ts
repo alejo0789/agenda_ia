@@ -65,6 +65,7 @@ export interface Cita {
     precio: number;
     fecha_creacion: string;
     fecha_actualizacion: string;
+    lizto_reservation_id?: string | null;
     cliente?: ClienteSimple | null;
     especialista?: EspecialistaSimple | null;
     servicio?: ServicioSimple | null;
