@@ -1,5 +1,5 @@
 import os
-import httpx
+import requests
 import re
 import random
 import string
@@ -14,7 +14,7 @@ class LiztoClient:
         self.email = email
         self.password = password
         self.base_url = base_url
-        self.session = httpx.Client(timeout=30.0)
+        self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -163,10 +163,23 @@ class LiztoClient:
         return []
 
     def get_services(self):
+        # Intentamos con el endpoint general primero
+        res = self.session.get(f"{self.base_url}/api/v1/services")
+        if res.status_code == 200:
+            data = res.json()
+            # La respuesta puede estar en data.result.items o directamente en data.items
+            items = data.get('data', {}).get('result', {}).get('items', [])
+            if not items:
+                items = data.get('items', [])
+            if items:
+                return items
+
+        # Si falla, intentamos con el de list/select que a veces funciona mejor para el POS
         res = self.session.get(f"{self.base_url}/api/v1/services/list/select")
         if res.status_code == 200:
             data = res.json()
             return data.get('data', {}).get('result', {}).get('items', [])
+            
         return []
 
     def create_appointment(self, customer_id, service_id, price_id, price_value, staff_id, date_str, start_time, duration="00:30:00"):

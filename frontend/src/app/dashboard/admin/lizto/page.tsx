@@ -82,16 +82,33 @@ export default function LiztoMappingPage() {
     };
 
     const handleSaveServicio = async (servicio_id: number, lizto_service_id: string, lizto_price_id: string, price_value: string) => {
-        if (!lizto_service_id || !lizto_price_id) return;
+        if (!lizto_service_id) return;
+
+        let finalPriceId = lizto_price_id;
+        let finalPriceValue = price_value;
+
+        // Si no hay variante seleccionada, intentar tomar la primera del servicio
+        if (!finalPriceId) {
+            const selectedLiztoService = liztoServices.find((s: any) => s.id.toString() === lizto_service_id);
+            const firstVariant = selectedLiztoService?.service_price_values?.[0];
+            if (firstVariant) {
+                finalPriceId = firstVariant.id.toString();
+                finalPriceValue = firstVariant.price.toString();
+            } else {
+                toast.error("El servicio seleccionado en Lizto no tiene precios configurados");
+                return;
+            }
+        }
         
         try {
             await liztoApi.guardarMappingServicio({
                 servicio_id,
                 lizto_service_id: Number(lizto_service_id),
-                lizto_price_id: Number(lizto_price_id),
-                lizto_price_value: Number(price_value),
+                lizto_price_id: Number(finalPriceId),
+                lizto_price_value: Number(finalPriceValue),
+                lizto_service_name: liztoServices.find((s: any) => s.id.toString() === lizto_service_id)?.name
             });
-            toast.success("Mapeo guardado");
+            toast.success("Mapeo de servicio guardado");
             loadData();
         } catch (error) {
             toast.error("Error al guardar mapeo");

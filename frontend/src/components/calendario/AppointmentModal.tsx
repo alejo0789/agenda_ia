@@ -64,8 +64,15 @@ interface Cita {
     cliente_id: number;
     cliente: CitaCliente;
     especialista_id: number;
+    especialista?: {
+        id: number;
+        nombre: string;
+        apellido?: string;
+    } | null;
+    especialista_nombre?: string; // Compatibilidad con CitaListItem
     servicio_id: number;
-    servicio: string;
+    servicio: any; // Puede ser string o el objeto Servicio completo de la API
+    servicio_nombre?: string;
     hora_inicio: string;
     hora_fin: string;
     duracion: number;
@@ -1233,7 +1240,11 @@ export function AppointmentModal({
                 <LiztoPublishModal
                     isOpen={showLiztoModal}
                     onClose={() => setShowLiztoModal(false)}
-                    cita={selectedCita as any}
+                    cita={{
+                        ...selectedCita,
+                        especialista_nombre: selectedCita.especialista_nombre || especialistas.find(e => e.id === selectedCita.especialista_id)?.nombre,
+                        servicio_nombre: selectedCita.servicio_nombre || (typeof selectedCita.servicio === 'string' ? selectedCita.servicio : (selectedCita.servicio as any)?.nombre) || todosLosServicios.find(s => s.id === selectedCita.servicio_id)?.nombre
+                    } as any}
                     onSuccess={(lizto_id) => {
                         setLocalLiztoId(lizto_id);
                         toast.success("Cita publicada exitosamente en Lizto");

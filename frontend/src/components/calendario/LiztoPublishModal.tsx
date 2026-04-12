@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Send, AlertTriangle } from 'lucide-react';
-import { liztoApi } from '@/lib/api/lizto';
+import { X, Send, AlertTriangle, Link2, Loader2 } from 'lucide-react';
+import { liztoApi, EspecialistaMappingData, ServicioMappingData } from '@/lib/api/lizto';
 import { Cita } from '@/lib/api/citas';
 
 interface LiztoPublishModalProps {
@@ -13,7 +13,36 @@ interface LiztoPublishModalProps {
 
 export function LiztoPublishModal({ isOpen, onClose, cita, onSuccess }: LiztoPublishModalProps) {
     const [loading, setLoading] = useState(false);
+    const [loadingMappings, setLoadingMappings] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [mappedStaff, setMappedStaff] = useState<EspecialistaMappingData | null>(null);
+    const [mappedService, setMappedService] = useState<ServicioMappingData | null>(null);
+
+    useEffect(() => {
+        if (isOpen && cita) {
+            cargarMapeos();
+        }
+    }, [isOpen, cita]);
+
+    const cargarMapeos = async () => {
+        setLoadingMappings(true);
+        try {
+            const [staffMaps, serviceMaps] = await Promise.all([
+                liztoApi.listarMappingEspecialistas(),
+                liztoApi.listarMappingServicios()
+            ]);
+            
+            const staff = staffMaps.find(m => m.especialista_id === cita.especialista_id);
+            const service = serviceMaps.find(m => m.servicio_id === cita.servicio_id);
+            
+            setMappedStaff(staff || null);
+            setMappedService(service || null);
+        } catch (err) {
+            console.error("Error cargando mapeos", err);
+        } finally {
+            setLoadingMappings(false);
+        }
+    };
 
     if (!isOpen || !cita) return null;
 
@@ -50,25 +79,64 @@ export function LiztoPublishModal({ isOpen, onClose, cita, onSuccess }: LiztoPub
 
                 <div className="p-5">
                     <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                        Revisa los datos antes de enviar. Asegúrate de que el especialista y servicio estén mapeados correctamente.
+                        Confirma los datos antes de publicar. El sistema vinculará esta cita con el staff y servicio mapeados de Lizto.
                     </div>
                     
-                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg space-y-2 mb-4 text-sm border border-gray-100 dark:border-gray-700">
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Cliente:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{cita.cliente?.nombre} {cita.cliente?.apellido || ''}</span>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg space-y-4 mb-4 text-sm border border-gray-100 dark:border-gray-700">
+                        {/* Info General */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 dark:text-gray-400">Cita SIAgenda:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">#{cita.id}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 dark:text-gray-400">Cliente:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{cita.cliente?.nombre} {cita.cliente?.apellido || ''}</span>
+                            </div>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Especialista:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{cita.especialista?.nombre}</span>
+
+                        {/* Mapeo de Especialista */}
+                        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-2 mb-1 text-purple-600 dark:text-purple-400 font-semibold">
+                                <Link2 className="w-4 h-4" />
+                                <span>Especialista Mapeado</span>
+                            </div>
+                            <div className="flex justify-between pl-6">
+                                <span className="text-gray-500 dark:text-gray-400">En SIAgenda:</span>
+                                <span>{cita.especialista?.nombre || (cita as any).especialista_nombre || 'No asignado'}</span>
+                            </div>
+                            <div className="flex justify-between pl-6 mt-1">
+                                <span className="text-gray-500 dark:text-gray-400">En Lizto:</span>
+                                {loadingMappings ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                        {mappedStaff?.lizto_staff_name || '❌ No mapeado'}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Servicio:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{cita.servicio?.nombre}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Hora:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{cita.hora_inicio} - {cita.hora_fin}</span>
+
+                        {/* Mapeo de Servicio */}
+                        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-2 mb-1 text-purple-600 dark:text-purple-400 font-semibold">
+                                <Link2 className="w-4 h-4" />
+                                <span>Servicio Mapeado</span>
+                            </div>
+                            <div className="flex justify-between pl-6">
+                                <span className="text-gray-500 dark:text-gray-400">En SIAgenda:</span>
+                                <span>{cita.servicio?.nombre || (cita as any).servicio_nombre || (typeof cita.servicio === 'string' ? cita.servicio : 'No asignado')}</span>
+                            </div>
+                            <div className="flex justify-between pl-6 mt-1">
+                                <span className="text-gray-500 dark:text-gray-400">En Lizto:</span>
+                                {loadingMappings ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                        {mappedService?.lizto_service_name || '✅ Servicio Detectado'}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
