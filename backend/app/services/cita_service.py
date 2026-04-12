@@ -260,9 +260,10 @@ class CitaService:
             "duracion_minutos": cita.duracion_minutos,
             "estado": cita.estado,
             "notas": cita.notas,
-            "cliente_nombre": f"{cita.cliente.nombre} {cita.cliente.apellido or ''}".strip(),
-            "cliente_telefono": cita.cliente.telefono,
-            "especialista_nombre": f"{cita.especialista.nombre} {cita.especialista.apellido or ''}".strip(),
-            "servicio_nombre": cita.servicio.nombre,
-            "servicio_color": cita.servicio.color_calendario
+            "cliente_nombre": f"{cita.cliente.nombre} {cita.cliente.apellido or ''}".strip() if cita.cliente else "Desconocido",
+            "cliente_telefono": cita.cliente.telefono if cita.cliente else None,
+            "especialista_nombre": f"{cita.especialista.nombre} {cita.especialista.apellido or ''}".strip() if cita.especialista else "Sin asignar",
+            "servicio_nombre": cita.servicio.nombre if cita.servicio else "Sin servicio",
+            "servicio_color": cita.servicio.color_calendario if cita.servicio else None,
+            "lizto_reservation_id": getattr(cita, "lizto_reservation_id", None)
         }

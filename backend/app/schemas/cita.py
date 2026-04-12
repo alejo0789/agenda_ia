@@ -109,6 +109,7 @@ class CitaResponse(BaseModel):
     cliente: Optional[ClienteSimple] = None
     especialista: Optional[EspecialistaSimple] = None
     servicio: Optional[ServicioSimple] = None
+    lizto_reservation_id: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -118,21 +119,22 @@ class CitaListResponse(BaseModel):
     """Schema para listados de citas (calendario)"""
     id: int
     cliente_id: int
-    especialista_id: int
+    especialista_id: Optional[int] = None
     servicio_id: int
     fecha: date
     hora_inicio: time
     hora_fin: time
     duracion_minutos: int
     estado: str
-    notas: Optional[str]
+    notas: Optional[str] = None
+    lizto_reservation_id: Optional[str] = None
     
     # Info básica de relaciones
     cliente_nombre: str
-    cliente_telefono: Optional[str]
+    cliente_telefono: Optional[str] = None
     especialista_nombre: str
     servicio_nombre: str
-    servicio_color: Optional[str]
+    servicio_color: Optional[str] = None
     
     class Config:
         from_attributes = True
