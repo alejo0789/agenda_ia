@@ -86,6 +86,7 @@ def obtener_cita(
         "notas": cita.notas,
         "notas_internas": cita.notas_internas,
         "precio": cita.precio,
+        "lizto_reservation_id": getattr(cita, "lizto_reservation_id", None),
         "fecha_creacion": cita.fecha_creacion,
         "fecha_actualizacion": cita.fecha_actualizacion,
         "cliente": {
