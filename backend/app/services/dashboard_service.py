@@ -67,12 +67,15 @@ class DashboardService:
             # Format time
             hora_str = c.hora_inicio.strftime("%I:%M %p") if c.hora_inicio else "??:??"
             
+            cliente_txt = f"{c.cliente.nombre} {c.cliente.apellido or ''}".strip() if c.cliente else "Desconocido"
+            especialista_txt = f"{c.especialista.nombre} {c.especialista.apellido or ''}".strip() if c.especialista else "Sin asignar"
+            
             proximas_citas.append({
                 "id": c.id,
                 "hora": hora_str,
-                "cliente": f"{c.cliente.nombre} {c.cliente.apellido}",
+                "cliente": cliente_txt,
                 "servicio": servicio_txt,
-                "especialista": f"{c.especialista.nombre} {c.especialista.apellido}",
+                "especialista": especialista_txt,
                 "estado": c.estado
             })
             

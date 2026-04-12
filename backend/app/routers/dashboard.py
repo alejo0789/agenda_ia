@@ -20,7 +20,7 @@ def get_dashboard_stats(
     # Según Sidebar.tsx: 'Administrador' puede ver casi todo.
     # En app/models/user.py, el rol tiene un nombre.
     
-    is_admin = current_user.rol.nombre in ["Administrador", "Super Administrador"] or current_user.rol_id == 1
+    is_admin = current_user.rol_id == 1 or (current_user.rol is not None and current_user.rol.nombre in ["Administrador", "Super Administrador"])
     
     return DashboardService.get_stats(
         db, 

@@ -339,22 +339,25 @@ def enviar_notificacion(
     Enviar notificacion de WhatsApp mediante el servicio externo bot
     Permiso: agenda.crear
     """
-    url = f"{settings.webchat_backend.rstrip('/')}/send-message"
+    # Asegurarnos de apuntar a /webhook/receive-message como n8n
+    base_url = settings.webchat_backend.replace("/api", "").rstrip('/')
+    url = f"{base_url}/webhook/receive-message"
     
     headers = {
         "Content-Type": "application/json",
-        "x-api-key": settings.web_chat_security
+        "x-tenant-Slug": "cali"
     }
+    
+    import time
+    timestamp_ms = int(time.time() * 1000)
     
     payload = {
         "phone": request.phone,
-        "name": request.name,
+        "contact_name": request.name,
         "message": request.message,
-        "agent_name": request.agent_name
+        "whatsapp_id": f"s_agenda_{timestamp_ms}",
+        "sender_type": "bot"
     }
-    
-    if request.agent_id is not None:
-        payload["agent_id"] = request.agent_id
     
     try:
         response = httpx.post(url, headers=headers, json=payload, timeout=10)
