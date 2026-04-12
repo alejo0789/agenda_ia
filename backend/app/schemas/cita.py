@@ -91,17 +91,17 @@ class ServicioSimple(BaseModel):
 class CitaResponse(BaseModel):
     """Schema de respuesta completo de cita"""
     id: int
-    cliente_id: int
-    especialista_id: int
-    servicio_id: int
+    cliente_id: Optional[int] = None
+    especialista_id: Optional[int] = None
+    servicio_id: Optional[int] = None
     fecha: date
-    hora_inicio: time
-    hora_fin: time
-    duracion_minutos: int
+    hora_inicio: Optional[time] = None
+    hora_fin: Optional[time] = None
+    duracion_minutos: Optional[int] = None
     estado: str
-    notas: Optional[str]
-    notas_internas: Optional[str]
-    precio: int
+    notas: Optional[str] = None
+    notas_internas: Optional[str] = None
+    precio: Optional[int] = None
     fecha_creacion: datetime
     fecha_actualizacion: datetime
     
@@ -118,13 +118,13 @@ class CitaResponse(BaseModel):
 class CitaListResponse(BaseModel):
     """Schema para listados de citas (calendario)"""
     id: int
-    cliente_id: int
+    cliente_id: Optional[int] = None
     especialista_id: Optional[int] = None
-    servicio_id: int
+    servicio_id: Optional[int] = None
     fecha: date
-    hora_inicio: time
-    hora_fin: time
-    duracion_minutos: int
+    hora_inicio: Optional[time] = None
+    hora_fin: Optional[time] = None
+    duracion_minutos: Optional[int] = None
     estado: str
     notas: Optional[str] = None
     lizto_reservation_id: Optional[str] = None
