@@ -111,6 +111,21 @@ async def upload_banner(file: UploadFile = File(...)):
         "status": "success"
     }
 
+@router.delete("/banners/{filename}")
+async def delete_banner(filename: str):
+    """Eliminar una imagen de la galería global de banners"""
+    banners_dir = Path("storage/banners")
+    target_path = banners_dir / filename
+    
+    if not target_path.exists():
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+        
+    try:
+        os.remove(target_path)
+        return {"status": "success", "message": "Imagen eliminada correctamente"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al eliminar imagen: {str(e)}")
+
 @router.get("/banners")
 async def list_banners():
     """Listar todas las imágenes en la galería global de banners"""

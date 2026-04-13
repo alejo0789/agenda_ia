@@ -80,6 +80,24 @@ export function NotificationModal({ isOpen, onClose, onConfirm, isSending }: Not
         }
     };
 
+    const handleDeleteBanner = async (filename: string) => {
+        // Usamos un confirm sencillo para evitar complicaciones en este componente
+        if (!window.confirm('¿Estás seguro de que deseas eliminar esta imagen de la galería?')) return;
+        
+        try {
+            await filesApi.deleteBanner(filename);
+            toast.success('Imagen eliminada');
+            loadBanners(); // Recargar la lista
+            // Si la imagen borrada era la seleccionada, la deseleccionamos
+            if (selectedUrl.includes(filename)) {
+                setSelectedUrl('');
+            }
+        } catch (error) {
+            console.error('Error eliminando banner:', error);
+            toast.error('No se pudo eliminar la imagen');
+        }
+    };
+
     const handleConfirm = () => {
         onConfirm(selectedUrl);
     };
@@ -211,29 +229,40 @@ export function NotificationModal({ isOpen, onClose, onConfirm, isSending }: Not
                             ) : (
                                 <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-auto p-1">
                                     {banners.map((banner) => (
-                                        <button
-                                            key={banner.url}
-                                            onClick={() => {
-                                                setSelectedUrl(banner.url);
-                                                setView('options');
-                                            }}
-                                            className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                                                selectedUrl === banner.url ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-100 hover:border-purple-300'
-                                            }`}
-                                        >
-                                            <img 
-                                                src={getImageUrl(banner.url)} 
-                                                alt={banner.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                            {selectedUrl === banner.url && (
-                                                <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
-                                                    <div className="bg-white rounded-full p-1 shadow-lg">
-                                                        <Check className="h-4 w-4 text-purple-600" />
+                                        <div key={banner.url} className="relative group">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedUrl(banner.url);
+                                                    setView('options');
+                                                }}
+                                                className={`w-full aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-[1.02] ${
+                                                    selectedUrl === banner.url ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-100 hover:border-purple-300'
+                                                }`}
+                                            >
+                                                <img 
+                                                    src={getImageUrl(banner.url)} 
+                                                    alt={banner.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                {selectedUrl === banner.url && (
+                                                    <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                                                        <div className="bg-white rounded-full p-1 shadow-lg">
+                                                            <Check className="h-4 w-4 text-purple-600" />
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </button>
+                                                )}
+                                            </button>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteBanner(banner.name);
+                                                }}
+                                                title="Eliminar imagen"
+                                                className="absolute -top-1 -right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10 hover:bg-red-600"
+                                            >
+                                                <X className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             )}

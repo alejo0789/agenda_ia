@@ -62,5 +62,10 @@ export const filesApi = {
     listBanners: async () => {
         const { data } = await apiClient.get<Array<{url: string; name: string}>>('/files/banners');
         return data;
+    },
+
+    deleteBanner: async (filename: string) => {
+        const { data } = await apiClient.delete<{ status: string; message: string }>(`/files/banners/${filename}`);
+        return data;
     }
 };
