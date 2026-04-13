@@ -335,7 +335,7 @@ def listar_citas_especialista(
 def _enviar_whatsapp_mensaje(phone: str, name: str, message: str, media_url: str = None):
     """
     Función helper interna para enviar mensajes de WhatsApp siguiendo el formato n8n requerido.
-    Normaliza el teléfono agregando el prefijo 57 si es necesario.
+    Si hay media_url, envía primero el texto y luego la imagen como mensajes separados.
     """
     # Normalización básica de teléfono para Colombia
     clean_phone = "".join(filter(str.isdigit, phone))
@@ -353,23 +353,40 @@ def _enviar_whatsapp_mensaje(phone: str, name: str, message: str, media_url: str
     import random
     from datetime import datetime
     
-    timestamp_ms = int(time.time() * 1000)
-    random_id = random.randint(0, 999)
-    
-    payload = {
-        "phone": clean_phone,
-        "contact_name": name,
-        "message": message,
-        "whatsapp_id": f"bot_{timestamp_ms}_{random_id}",
-        "sender_type": "bot",
-        "timestamp": datetime.now().isoformat(),
-        "media_type": "image" if media_url else "text",
-        "media_url": media_url,
-        "tag": "agenda"
-    }
-    
-    response = httpx.post(url, headers=headers, json=payload, timeout=10)
-    response.raise_for_status()
+    def get_payload(msg, media=None):
+        timestamp_ms = int(time.time() * 1000)
+        random_id = random.randint(0, 999)
+        return {
+            "phone": clean_phone,
+            "contact_name": name,
+            "message": msg,
+            "whatsapp_id": f"bot_{timestamp_ms}_{random_id}",
+            "sender_type": "bot",
+            "timestamp": datetime.now().isoformat(),
+            "media_type": "image" if media else "text",
+            "media_url": media,
+            "tag": "agenda"
+        }
+
+    # Si hay imagen, enviamos dos mensajes
+    if media_url:
+        # 1. Enviar el Texto
+        payload_text = get_payload(message)
+        httpx.post(url, headers=headers, json=payload_text, timeout=10)
+        
+        # Pequeña pausa para asegurar el orden
+        time.sleep(1)
+        
+        # 2. Enviar la Imagen (con caption opcional o vacío)
+        payload_image = get_payload("", media_url)
+        response = httpx.post(url, headers=headers, json=payload_image, timeout=10)
+        response.raise_for_status()
+    else:
+        # Enviar solo Texto
+        payload = get_payload(message)
+        response = httpx.post(url, headers=headers, json=payload, timeout=10)
+        response.raise_for_status()
+        
     return {"status": "success", "message": "Notificación enviada correctamente"}
 
 
