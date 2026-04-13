@@ -360,19 +360,24 @@ def _enviar_whatsapp_mensaje(phone: str, name: str, message: str, media_url: str
         # Asegurar que el media_url sea una URL absoluta si existe
         full_media_url = media
         if media and media.startswith('/'):
+            # Importar quote para manejar espacios y caracteres especiales
+            from urllib.parse import quote
+            
             # Limpiar barras para evitar //
             base = settings.base_url.rstrip('/')
-            full_media_url = f"{base}{media}"
+            # Codificar el path (banners/nombre.jpg)
+            encoded_media = quote(media)
+            full_media_url = f"{base}{encoded_media}"
             
         return {
             "phone": clean_phone,
             "contact_name": name,
             "message": msg,
-            "whatsapp_id": f"bot_{timestamp_ms}_{random_id}",
+            "media_url": full_media_url,
+            "media_type": "image" if media else "text",
             "sender_type": "bot",
             "timestamp": datetime.now().isoformat(),
-            "media_type": "image" if media else "text",
-            "media_url": full_media_url,
+            "whatsapp_id": f"bot_{timestamp_ms}_{random_id}",
             "tag": "agenda"
         }
 
