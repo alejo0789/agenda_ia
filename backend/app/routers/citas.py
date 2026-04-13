@@ -473,7 +473,7 @@ def notificar_agenda_especialistas(
         servicios_text = ""
         for cita in sorted(data["servicios"], key=lambda x: x.hora_inicio):
             hora = cita.hora_inicio.strftime("%H:%M")
-            servicios_text += f"\n* {hora} - {cita.servicio.nombre if cita.servicio else 'Servicio'}"
+            servicios_text += f"\n* {hora}"
             
         mensaje = f"Hola {esp.nombre}, para mañana tenemos los servicios:{servicios_text}\n\n¿Puedes hacerlos? si/no"
         
