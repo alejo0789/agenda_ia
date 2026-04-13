@@ -164,10 +164,10 @@ export function CalendarGrid({
         <div className="relative">
             {/* Header con Especialistas */}
             <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                <div className="flex">
+                <div className="flex w-fit">
                     {/* Columna de Horas (vacía en el header) - sticky */}
-                    <div className="w-20 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 p-2 sticky left-0 bg-white dark:bg-gray-900 z-10">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Hora</span>
+                    <div className="w-20 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 p-2 sticky left-0 bg-white dark:bg-gray-900 z-30 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]">
+                        <span className="text-xs font-bold text-purple-600 dark:text-purple-400">Hora</span>
                     </div>
 
                     {/* Headers de Especialistas */}
@@ -217,9 +217,9 @@ export function CalendarGrid({
                 )}
 
                 {/* Filas de Tiempo */}
-                <div className="flex">
+                <div className="flex w-fit">
                     {/* Columna de Horas - sticky */}
-                    <div className="w-20 flex-shrink-0 sticky left-0 bg-white dark:bg-gray-900 z-10">
+                    <div className="w-20 flex-shrink-0 sticky left-0 bg-white dark:bg-gray-900 z-20 border-r border-gray-200 dark:border-gray-800 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]">
                         {TIME_SLOTS.map((slot) => (
                             <div
                                 key={slot.time}
