@@ -87,16 +87,20 @@ export default function LiztoMappingPage() {
         let finalPriceId = lizto_price_id;
         let finalPriceValue = price_value;
 
-        // Si no hay variante seleccionada, intentar tomar la primera del servicio
+        // Intentar buscar variantes pero no bloquear si no existen
         if (!finalPriceId) {
             const selectedLiztoService = liztoServices.find((s: any) => s.id.toString() === lizto_service_id);
-            const firstVariant = selectedLiztoService?.service_price_values?.[0];
+            // Intentamos buscar en varios campos posibles donde Lizto guarda precios
+            const variants = selectedLiztoService?.service_price_values || selectedLiztoService?.prices || [];
+            const firstVariant = variants[0];
+            
             if (firstVariant) {
                 finalPriceId = firstVariant.id.toString();
-                finalPriceValue = firstVariant.price.toString();
+                finalPriceValue = firstVariant.price?.toString() || "0";
             } else {
-                toast.error("El servicio seleccionado en Lizto no tiene precios configurados");
-                return;
+                // Fallback: usar el ID del servicio como ID de precio y 0 como valor
+                finalPriceId = lizto_service_id;
+                finalPriceValue = "0";
             }
         }
         

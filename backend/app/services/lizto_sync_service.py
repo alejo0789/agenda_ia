@@ -48,14 +48,14 @@ class LiztoSyncService:
             raise HTTPException(status_code=500, detail="Error en autenticación con Lizto")
 
         # Buscar cliente por cédula o teléfono
-        search_query = cliente.documento_identidad or cliente.telefono
+        search_query = cliente.cedula or cliente.telefono
         lizto_customer = client.search_customer(search_query) if search_query else None
         
         if lizto_customer:
             lizto_customer_id = lizto_customer.get("id")
         else:
             # Crear cliente
-            doc = cliente.documento_identidad or "000000000"
+            doc = cliente.cedula or "000000000"
             phone = cliente.telefono or "0000000000"
             email = cliente.email or f"noreply_{cliente.id}@example.com"
             new_customer = client.create_customer(

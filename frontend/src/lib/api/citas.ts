@@ -185,5 +185,28 @@ export const citasApi = {
      */
     enviarNotificacion: async (data: NotificacionRequest): Promise<void> => {
         await apiClient.post(`/citas/notificar`, data);
+    },
+
+    /**
+     * Enviar agenda a especialistas
+     */
+    notificarEspecialistas: async (fecha: string): Promise<{ message: string }> => {
+        const response = await apiClient.post(`/citas/notificar-especialistas`, null, {
+            params: { fecha }
+        });
+        return response.data;
+    },
+
+    /**
+     * Enviar confirmación a clientes
+     */
+    notificarClientes: async (fecha: string, mediaUrl?: string): Promise<{ message: string }> => {
+        const params: Record<string, any> = { fecha };
+        if (mediaUrl) params.media_url = mediaUrl;
+        
+        const response = await apiClient.post(`/citas/notificar-clientes`, null, {
+            params
+        });
+        return response.data;
     }
 };

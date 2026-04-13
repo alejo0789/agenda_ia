@@ -46,5 +46,21 @@ export const filesApi = {
 
         const { data } = await apiClient.delete<{ status: string; message: string }>('/files/delete', { params });
         return data;
+    },
+
+    uploadBanner: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const { data } = await apiClient.post<{url: string; name: string; status: string}>('/files/banners', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return data;
+    },
+
+    listBanners: async () => {
+        const { data } = await apiClient.get<Array<{url: string; name: string}>>('/files/banners');
+        return data;
     }
 };

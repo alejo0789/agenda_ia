@@ -81,8 +81,6 @@ async def upload_file(
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Retornar info del archivo guardado
-        # La URL dependerá de cómo montemos StaticFiles en main.py
         return {
             "filename": file.filename, 
             "status": "success", 
@@ -93,6 +91,41 @@ async def upload_file(
     except Exception as e:
         print(f"Error subiendo archivo: {e}")
         raise HTTPException(status_code=500, detail=f"Error interno al subir archivo: {str(e)}")
+
+@router.post("/banners")
+async def upload_banner(file: UploadFile = File(...)):
+    """Subir una imagen a la galería global de banners"""
+    banners_dir = Path("storage/banners")
+    banners_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Limpiar nombre de archivo
+    safe_name = "".join(c for c in file.filename if c.isalnum() or c in "._- ").strip()
+    target_path = banners_dir / safe_name
+    
+    with target_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {
+        "url": f"/banners/{safe_name}",
+        "name": safe_name,
+        "status": "success"
+    }
+
+@router.get("/banners")
+async def list_banners():
+    """Listar todas las imágenes en la galería global de banners"""
+    banners_dir = Path("storage/banners")
+    if not banners_dir.exists():
+        return []
+        
+    banners = []
+    for entry in banners_dir.iterdir():
+        if entry.is_file():
+            banners.append({
+                "name": entry.name,
+                "url": f"/banners/{entry.name}"
+            })
+    return banners
 
 @router.get("/list")
 async def list_files(

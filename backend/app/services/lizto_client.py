@@ -52,6 +52,7 @@ class LiztoClient:
     def init_context(self):
         print("--- Sincronizando contexto de POS ---")
         try:
+            # Cargar primero la página de POS para el CSRF
             res = self.session.get(f"{self.base_url}/transactions/bill")
             self.csrf_token = re.search(r'name="csrf-token"\s+content="([^"]+)"', res.text).group(1)
             self.tenant_slug = re.search(r'name="tenant-slug"\s+content="([^"]+)"', res.text).group(1)
@@ -63,10 +64,22 @@ class LiztoClient:
                 'lizto-user-uuid': self.user_uuid
             })
             print(f"Contexto cargado: {self.tenant_slug} | CSRF Listo.")
+            
+            # Cargar también la página del calendario para sincronizar el contexto de reservas
+            cal_res = self.session.get(f"{self.base_url}/calendar")
+            if cal_res.status_code == 200:
+                # Actualizar el CSRF con el del calendario si es diferente
+                cal_csrf = re.search(r'name="csrf-token"\s+content="([^"]+)"', cal_res.text)
+                if cal_csrf:
+                    self.csrf_token = cal_csrf.group(1)
+                    self.session.headers.update({'x-csrf-token': self.csrf_token})
+                print("--- Contexto de calendario sincronizado ---")
+            
             return True
         except Exception as e:
             print(f"Error cargando contexto: {e}")
             return False
+
 
     def create_customer(self, first_name, last_name, identification, phone, email):
         print(f"--- Creando Cliente: {first_name} {last_name} ---")
@@ -202,8 +215,8 @@ class LiztoClient:
                     "end": end_time,
                     "from_combo": False,
                     "from_plan": False,
-                    "price_id": price_id,
-                    "price_value": price_value,
+                    **({"price_id": price_id} if price_id and price_id != service_id else {}),
+                    "price_value": price_value if price_value else 0,
                     "price_value_changed": False,
                     "selected_for_customer": False,
                     "seller_id": None,
@@ -218,7 +231,14 @@ class LiztoClient:
             "repetitions": []
         }
 
+        import json as _json
+        print(f"=== PAYLOAD ENVIADO A LIZTO ===")
+        print(_json.dumps(payload, indent=2))
+        
         res = self.session.post(f"{self.base_url}/api/v1/reservations", json=payload)
+        
+        print(f"=== RESPUESTA LIZTO: {res.status_code} ===")
+        print(res.text[:1000])
         
         if res.status_code in [200, 201]:
             data = res.json()

@@ -331,6 +331,48 @@ def listar_citas_especialista(
     return [CitaService.format_cita_list(c) for c in citas]
 
 
+
+def _enviar_whatsapp_mensaje(phone: str, name: str, message: str, media_url: str = None):
+    """
+    Función helper interna para enviar mensajes de WhatsApp siguiendo el formato n8n requerido.
+    Normaliza el teléfono agregando el prefijo 57 si es necesario.
+    """
+    # Normalización básica de teléfono para Colombia
+    clean_phone = "".join(filter(str.isdigit, phone))
+    if len(clean_phone) == 10:
+        clean_phone = f"57{clean_phone}"
+    
+    url = "https://largebotinterfaz-production-5b38.up.railway.app/webhook/receive-message"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "x-tenant-Slug": "cali"
+    }
+    
+    import time
+    import random
+    from datetime import datetime
+    
+    timestamp_ms = int(time.time() * 1000)
+    random_id = random.randint(0, 999)
+    
+    payload = {
+        "phone": clean_phone,
+        "contact_name": name,
+        "message": message,
+        "whatsapp_id": f"bot_{timestamp_ms}_{random_id}",
+        "sender_type": "bot",
+        "timestamp": datetime.now().isoformat(),
+        "media_type": "image" if media_url else "text",
+        "media_url": media_url,
+        "tag": "agenda"
+    }
+    
+    response = httpx.post(url, headers=headers, json=payload, timeout=10)
+    response.raise_for_status()
+    return {"status": "success", "message": "Notificación enviada correctamente"}
+
+
 @router.post("/notificar", status_code=status.HTTP_200_OK)
 def enviar_notificacion(
     request: NotificacionRequest,
@@ -340,30 +382,8 @@ def enviar_notificacion(
     Enviar notificacion de WhatsApp mediante el servicio externo bot
     Permiso: agenda.crear
     """
-    # Asegurarnos de apuntar a /webhook/receive-message como n8n
-    base_url = settings.webchat_backend.replace("/api", "").rstrip('/')
-    url = f"{base_url}/webhook/receive-message"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "x-tenant-Slug": "cali"
-    }
-    
-    import time
-    timestamp_ms = int(time.time() * 1000)
-    
-    payload = {
-        "phone": request.phone,
-        "contact_name": request.name,
-        "message": request.message,
-        "whatsapp_id": f"s_agenda_{timestamp_ms}",
-        "sender_type": "bot"
-    }
-    
     try:
-        response = httpx.post(url, headers=headers, json=payload, timeout=10)
-        response.raise_for_status()
-        return {"status": "success", "message": "Notificación enviada correctamente"}
+        return _enviar_whatsapp_mensaje(request.phone, request.name, request.message)
     except httpx.HTTPError as e:
         print(f"Error enviando notificación: {e}")
         # Intentar leer el response
@@ -379,3 +399,125 @@ def enviar_notificacion(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=detail
         )
+
+
+@router.post("/notificar-especialistas", status_code=status.HTTP_200_OK)
+def notificar_agenda_especialistas(
+    fecha: date = Query(..., description="Fecha de la agenda"),
+    db: Session = Depends(get_db),
+    auth_context: dict = Depends(require_permission("agenda.crear"))
+):
+    """
+    Enviar agenda del día a todos los especialistas que tengan citas
+    """
+    sede_id = auth_context["user"].sede_id
+    citas = CitaService.get_by_fecha(db, fecha, sede_id=sede_id)
+    
+    # Filtrar solo las que no están canceladas
+    citas = [c for c in citas if c.estado not in ['cancelada', 'no_show']]
+    
+    if not citas:
+        return {"status": "success", "message": "No hay citas para notificar"}
+
+    # Agrupar por especialista
+    agenda_por_especialista = {}
+    for cita in citas:
+        if not cita.especialista_id:
+            continue
+        if cita.especialista_id not in agenda_por_especialista:
+            agenda_por_especialista[cita.especialista_id] = {
+                "especialista": cita.especialista,
+                "servicios": []
+            }
+        agenda_por_especialista[cita.especialista_id]["servicios"].append(cita)
+
+    # Enviar notificaciones
+    enviados = 0
+    errores = 0
+    
+    for esp_id, data in agenda_por_especialista.items():
+        esp = data["especialista"]
+        if not esp.telefono:
+            continue
+            
+        servicios_text = ""
+        for cita in sorted(data["servicios"], key=lambda x: x.hora_inicio):
+            hora = cita.hora_inicio.strftime("%H:%M")
+            servicios_text += f"\n* {hora} - {cita.servicio.nombre if cita.servicio else 'Servicio'}"
+            
+        mensaje = f"Hola {esp.nombre}, para mañana tenemos los servicios:{servicios_text}\n\n¿Puedes hacerlos? si/no"
+        
+        # Usar la lógica de envío
+        try:
+            _enviar_whatsapp_mensaje(esp.telefono, esp.nombre, mensaje)
+            enviados += 1
+        except Exception as e:
+            print(f"Error al enviar a {esp.nombre}: {e}")
+            errores += 1
+            
+    return {
+        "status": "success", 
+        "message": f"Agenda enviada a {enviados} especialistas. Errores: {errores}"
+    }
+
+
+@router.post("/notificar-clientes", status_code=status.HTTP_200_OK)
+def notificar_confirmacion_clientes(
+    fecha: date = Query(..., description="Fecha de las citas"),
+    media_url: Optional[str] = Query(None, description="URL de la imagen opcional"),
+    db: Session = Depends(get_db),
+    auth_context: dict = Depends(require_permission("agenda.crear"))
+):
+    """
+    Enviar confirmación de cita a todos los clientes del día
+    """
+    sede_id = auth_context["user"].sede_id
+    citas = CitaService.get_by_fecha(db, fecha, sede_id=sede_id)
+    
+    # Filtrar solo las agendadas
+    citas = [c for c in citas if c.estado == 'agendada']
+    
+    if not citas:
+        return {"status": "success", "message": "No hay citas pendientes por confirmar"}
+
+    enviados = 0
+    errores = 0
+    
+    for cita in citas:
+        cliente = cita.cliente
+        if not cliente or not cliente.telefono:
+            continue
+            
+        hora = cita.hora_inicio.strftime("%I:%M %p")
+        servicio = cita.servicio.nombre if cita.servicio else "tu servicio"
+        
+        mensaje = (
+            f"💖 ¡Hola hermosa {cliente.nombre}!\n\n"
+            f"En el Club de Alisados Large estamos felices de poder recibirte mañana a las {hora}✨\n\n"
+            "Datos importantes: \n\n"
+            "1️⃣ Si necesitas cambiar tu cita, por favor avísanos mínimo con 3 horas de anticipación "
+            "(esto no aplica para las citas de las 7:00 a.m.) y Podrás reasignar tu cita hasta 2 veces como máximo.\n\n"
+            "2️⃣ Tendrás 15 minutos de espera; pasado ese tiempo, la cita se liberará automáticamente.\n\n"
+            "3️⃣ En caso de no asistir o no avisar dentro del tiempo establecido, el abono no podrá ser reembolsado.\n\n"
+            "4️⃣ Te recordamos que si bien los lavados no están incluidos dentro de la promoción son un factor importante "
+            "para que veas finalizado tu procedimiento y el alisado de tu cabello final.\n\n"
+            "5️⃣ Finalmente la duración del tratamiento depende del postcuidado, por eso tenemos una promoción "
+            "del kit post cuidado en 135.000, que incluye shampoo, acondicionador, mascarilla y termoprotector, "
+            "recuerda que todos nuestros productos son completamente orgánicos y que han dado unos resultados espectaculares.\n\n"
+            "¡Te esperamos! 💓 🌸\n\n"
+            "Equipo Large Cali\n"
+            "📍 Av. 6A Norte #37BN-132, frente a Chipichape (2° piso, arriba de Drogas La Rebaja)\n"
+            "📍 https://maps.google.com/maps/search/Large%20Cali/@3.4511,-76.5308,17z?hl=es"
+        )
+        
+        try:
+            _enviar_whatsapp_mensaje(cliente.telefono, cliente.nombre, mensaje, media_url)
+            enviados += 1
+        except Exception as e:
+            print(f"Error al enviar a cliente {cliente.nombre}: {e}")
+            errores += 1
+            
+    return {
+        "status": "success", 
+        "message": f"Confirmación enviada a {enviados} clientes. Errores: {errores}"
+    }

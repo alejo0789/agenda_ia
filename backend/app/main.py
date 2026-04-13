@@ -86,7 +86,9 @@ app.add_middleware(
 import os
 os.makedirs("storage/uploads", exist_ok=True)
 os.makedirs("storage/documentacion", exist_ok=True)
+os.makedirs("storage/banners", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="storage/uploads"), name="uploads")
+app.mount("/banners", StaticFiles(directory="storage/banners"), name="banners")
 app.mount("/storage", StaticFiles(directory="storage"), name="storage")
 
 

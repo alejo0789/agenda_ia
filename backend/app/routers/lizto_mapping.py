@@ -123,14 +123,26 @@ def listar_staff_lizto(db: Session = Depends(get_db)):
     return {"items": staff}
 
 @router.get("/services")
-def listar_services_lizto():
-    """Contacta Lizto para traer la lista de servicios y sus variantes de precio."""
+def listar_services_lizto(db: Session = Depends(get_db)):
+    """Contacta Lizto para traer la lista de servicios activos en la sede configurada."""
     if not settings.lizto_email or not settings.lizto_password:
          raise HTTPException(status_code=500, detail="Credenciales Lizto no configuradas")
+    
+    config_location = db.query(LiztoConfig).filter(LiztoConfig.key == "location_id").first()
+    location_id = int(config_location.value) if config_location else 8
          
     client = LiztoClient(settings.lizto_email, settings.lizto_password)
     client.login()
     services = client.get_services()
+    
+    # Filtrar solo los activos en la sede configurada
+    if services:
+        services = [
+            s for s in services
+            if location_id in (s.get("allowed_locations_ids") or [])
+            and s.get("active", True)
+        ]
+    
     return {"items": services}
 
 # 5. Configuración global

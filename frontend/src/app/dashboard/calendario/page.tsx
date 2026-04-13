@@ -11,13 +11,17 @@ import {
     Filter,
     Loader2,
     AlertCircle,
-    Sparkles
+    Sparkles,
+    Send,
+    UserCheck,
+    Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CalendarGrid } from '@/components/calendario/CalendarGrid';
 import { AppointmentModal } from '@/components/calendario/AppointmentModal';
 import { DatePickerModal } from '@/components/calendario/DatePickerModal';
 import { IACitasModal } from '@/components/calendario/IACitasModal';
+import { NotificationModal } from '@/components/calendario/NotificationModal';
 import { especialistasApi } from '@/lib/api/especialistas';
 import { citasApi, CitaListItem } from '@/lib/api/citas';
 import { Especialista, Horario, Bloqueo } from '@/types/especialista';
@@ -83,6 +87,10 @@ export default function CalendarioPage() {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showAppointmentModal, setShowAppointmentModal] = useState(false);
     const [showIACitasModal, setShowIACitasModal] = useState(false);
+    const [showNotificationModal, setShowNotificationModal] = useState(false);
+    const [showSendMenu, setShowSendMenu] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+    const [mediaUrl, setMediaUrl] = useState('');
     const [selectedSlot, setSelectedSlot] = useState<{
         especialistaId: number;
         hora: string;
@@ -317,6 +325,43 @@ export default function CalendarioPage() {
             }
         }
     };
+    
+    // Funciones para enviar agenda
+    const handleSendToSpecialists = async () => {
+        setIsSending(true);
+        setShowSendMenu(false);
+        try {
+            const fechaStr = format(selectedDate, 'yyyy-MM-dd');
+            const res = await citasApi.notificarEspecialistas(fechaStr);
+            toast.success(res.message);
+        } catch (error) {
+            console.error('Error enviando agenda a especialistas:', error);
+            toast.error('Error al enviar agenda a especialistas');
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const handleSendWithImage = async (url: string) => {
+        setIsSending(true);
+        try {
+            const fechaStr = format(selectedDate, 'yyyy-MM-dd');
+            const res = await citasApi.notificarClientes(fechaStr, url || undefined);
+            toast.success(res.message);
+            setShowNotificationModal(false);
+            setMediaUrl(''); // Limpiar después de enviar
+        } catch (error) {
+            console.error('Error enviando confirmación a clientes:', error);
+            toast.error('Error al enviar confirmación a clientes');
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const handleSendToClientsClick = () => {
+        setShowSendMenu(false);
+        setShowNotificationModal(true);
+    };
 
     if (isLoading) {
         return (
@@ -411,6 +456,62 @@ export default function CalendarioPage() {
                         <Button variant="outline" size="icon" className="h-9 w-9">
                             <Filter className="h-4 w-4" />
                         </Button>
+                        <div className="relative">
+                            <Button 
+                                variant="outline" 
+                                onClick={() => setShowSendMenu(!showSendMenu)}
+                                className="bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-900 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                                disabled={isSending}
+                            >
+                                {isSending ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Send className="h-4 w-4 mr-2" />
+                                )}
+                                Enviar agenda
+                            </Button>
+                            
+                            {showSendMenu && (
+                                <>
+                                    <div 
+                                        className="fixed inset-0 z-40" 
+                                        onClick={() => setShowSendMenu(false)}
+                                    />
+                                    <div className="absolute right-0 mt-2 w-64 rounded-xl shadow-2xl bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 z-50 overflow-hidden border border-gray-100 dark:border-gray-800 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="p-1" role="menu" aria-orientation="vertical">
+                                            <button
+                                                onClick={handleSendToSpecialists}
+                                                className="flex w-full items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors rounded-lg group"
+                                                role="menuitem"
+                                            >
+                                                <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center mr-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-800 transition-colors">
+                                                    <UserCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="font-semibold text-gray-900 dark:text-white">A especialistas</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">Enviar agenda del día</p>
+                                                </div>
+                                            </button>
+                                            
+                                            <button
+                                                onClick={handleSendToClientsClick}
+                                                className="flex w-full items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-pink-900/30 transition-colors rounded-lg group"
+                                                role="menuitem"
+                                            >
+                                                <div className="w-8 h-8 rounded-full bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center mr-3 group-hover:bg-pink-200 dark:group-hover:bg-pink-800 transition-colors">
+                                                    <Users className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="font-semibold text-gray-900 dark:text-white">Confirmar a clientes</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">Recordatorio con opción de imagen</p>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
                         <Button
                             className="bg-gradient-to-r from-amber-500 via-orange-500 to-pink-500 hover:from-amber-600 hover:via-orange-600 hover:to-pink-600 shadow-lg shadow-orange-500/25 transition-all hover:shadow-orange-500/40"
                             onClick={() => setShowIACitasModal(true)}
@@ -482,6 +583,13 @@ export default function CalendarioPage() {
                 onCitaCreated={() => {
                     loadCitas();
                 }}
+            />
+            {/* Modal de Confirmación de Notificación */}
+            <NotificationModal
+                isOpen={showNotificationModal}
+                onClose={() => setShowNotificationModal(false)}
+                onConfirm={handleSendWithImage}
+                isSending={isSending}
             />
         </div>
     );
