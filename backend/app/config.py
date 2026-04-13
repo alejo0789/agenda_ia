@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     web_chat_security: str = "IA_w1232_r3quest_20dos?"
     lizto_email: str | None = None
     lizto_password: str | None = None
+    base_url: str = "https://large-alisados-backend.railway.app"
 
     class Config:
         env_file = ".env"

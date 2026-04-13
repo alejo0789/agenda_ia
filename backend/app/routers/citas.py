@@ -356,6 +356,14 @@ def _enviar_whatsapp_mensaje(phone: str, name: str, message: str, media_url: str
     def get_payload(msg, media=None):
         timestamp_ms = int(time.time() * 1000)
         random_id = random.randint(0, 999)
+        
+        # Asegurar que el media_url sea una URL absoluta si existe
+        full_media_url = media
+        if media and media.startswith('/'):
+            # Limpiar barras para evitar //
+            base = settings.base_url.rstrip('/')
+            full_media_url = f"{base}{media}"
+            
         return {
             "phone": clean_phone,
             "contact_name": name,
@@ -364,7 +372,7 @@ def _enviar_whatsapp_mensaje(phone: str, name: str, message: str, media_url: str
             "sender_type": "bot",
             "timestamp": datetime.now().isoformat(),
             "media_type": "image" if media else "text",
-            "media_url": media,
+            "media_url": full_media_url,
             "tag": "agenda"
         }
 
